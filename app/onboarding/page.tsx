@@ -55,7 +55,7 @@ function OnboardingContent() {
       .single();
 
     if (data) {
-      const isTnConnected = !!data.tn_store_id;
+      const isTnConnected = !!data.tn_store_id && !data.tn_disconnected_at;
       setTnConnected(isTnConnected);
 
       if (hasGoogle && !data.gmail_connected) {
