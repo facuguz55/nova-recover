@@ -113,6 +113,23 @@ function OnboardingContent() {
     }
   }
 
+  async function activateTrial() {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/trial/activate", { method: "POST" });
+      if (res.ok) {
+        toast.success("¡Prueba activada! Redirigiendo al dashboard...");
+        setTimeout(() => router.push("/dashboard"), 1200);
+      } else {
+        toast.error("Error activando la prueba. Intentá de nuevo.");
+        setLoading(false);
+      }
+    } catch {
+      toast.error("Error de red. Intentá de nuevo.");
+      setLoading(false);
+    }
+  }
+
   async function handleLogout() {
     const supabase = createClient();
     await supabase.auth.signOut();
@@ -337,6 +354,21 @@ function OnboardingContent() {
               </button>
 
               <p className="text-center text-xs text-[#94A3B8] mt-3">Pago seguro con Stripe. Podés cancelar en cualquier momento.</p>
+
+              <div className="flex items-center gap-3 my-4">
+                <div className="flex-1 h-px bg-[rgba(124,58,237,0.15)]" />
+                <span className="text-xs text-[#94A3B8]">o</span>
+                <div className="flex-1 h-px bg-[rgba(124,58,237,0.15)]" />
+              </div>
+
+              <button
+                onClick={activateTrial}
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-2 border border-[rgba(124,58,237,0.3)] hover:border-[rgba(124,58,237,0.6)] disabled:opacity-60 text-[#8B5CF6] hover:text-white py-3 rounded-xl text-sm font-medium transition-all"
+              >
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                Probar gratis sin tarjeta
+              </button>
 
               <button onClick={() => setCurrentStep(2)} className="mt-3 w-full text-sm text-[#94A3B8] hover:text-white transition-colors py-2">
                 ← Volver al paso anterior
