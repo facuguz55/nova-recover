@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Zap, ShoppingCart, Mail, CreditCard, CheckCircle, Loader2, ExternalLink, LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
@@ -14,16 +14,12 @@ const STEPS = [
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
-
-  const [tnStoreId, setTnStoreId] = useState("");
-  const [tnApiToken, setTnApiToken] = useState("");
-  const [tnErrors, setTnErrors] = useState<Record<string, string>>({});
-
+  const [tnConnected, setTnConnected] = useState(false);
   const [gmailConnected, setGmailConnected] = useState(false);
-  const [onboardingId, setOnboardingId] = useState<string | null>(null);
 
   useEffect(() => {
     loadProgress();
@@ -34,8 +30,11 @@ export default function OnboardingPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { router.push("/login"); return; }
 
-    // Detectar si el usuario acaba de conectar Google OAuth
     const hasGoogle = user.identities?.some(i => i.provider === "google");
+    const justConnectedTN = searchParams.get("tn_connected") === "1";
+    const tnError = searchParams.get("tn_error");
+
+    if (tnError) toast.error("Error conectando TiendaNube. Intentá de nuevo.");
 
     const { data } = await supabase
       .from("onboarding_data")
@@ -44,23 +43,21 @@ export default function OnboardingPage() {
       .single();
 
     if (data) {
-      setOnboardingId(data.id);
-      if (data.tn_store_id) setTnStoreId(data.tn_store_id);
-      if (data.tn_api_token) setTnApiToken(data.tn_api_token);
+      const isTnConnected = !!data.tn_store_id;
+      setTnConnected(isTnConnected);
 
-      // Si tiene Google conectado y no estaba marcado, actualizar DB
       if (hasGoogle && !data.gmail_connected) {
-        await supabase
-          .from("onboarding_data")
-          .update({ gmail_connected: true })
-          .eq("id", data.id);
+        await supabase.from("onboarding_data").update({ gmail_connected: true }).eq("id", data.id);
         setGmailConnected(true);
         setCurrentStep(3);
         toast.success("¡Gmail conectado correctamente!");
       } else {
         setGmailConnected(data.gmail_connected ?? false);
         if (data.gmail_connected) setCurrentStep(3);
-        else if (data.tn_store_id) setCurrentStep(2);
+        else if (isTnConnected) {
+          setCurrentStep(2);
+          if (justConnectedTN) toast.success("¡TiendaNube conectada correctamente!");
+        }
       }
     } else if (hasGoogle) {
       setGmailConnected(true);
@@ -69,43 +66,9 @@ export default function OnboardingPage() {
     setInitialLoading(false);
   }
 
-  async function saveStep1() {
-    const errs: Record<string, string> = {};
-    if (!tnStoreId.trim()) errs.tnStoreId = "El Store ID es obligatorio";
-    if (!tnApiToken.trim()) errs.tnApiToken = "El API Token es obligatorio";
-    if (Object.keys(errs).length) { setTnErrors(errs); return; }
-    setTnErrors({});
+  function connectTiendaNube() {
     setLoading(true);
-
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    let error;
-    if (onboardingId) {
-      ({ error } = await supabase.from("onboarding_data").update({
-        tn_store_id: tnStoreId,
-        tn_api_token: tnApiToken,
-      }).eq("id", onboardingId));
-    } else {
-      const { data, error: insertError } = await supabase.from("onboarding_data").insert({
-        client_id: user.id,
-        tn_store_id: tnStoreId,
-        tn_api_token: tnApiToken,
-      }).select().single();
-      error = insertError;
-      if (data) setOnboardingId(data.id);
-    }
-
-    if (error) {
-      toast.error("Error guardando los datos. Intentá de nuevo.");
-      setLoading(false);
-      return;
-    }
-
-    toast.success("¡Tienda conectada!");
-    setCurrentStep(2);
-    setLoading(false);
+    window.location.href = "/api/tiendanube/connect";
   }
 
   async function connectGmail() {
@@ -119,7 +82,6 @@ export default function OnboardingPage() {
         queryParams: { access_type: "offline", prompt: "consent" },
       },
     });
-
     if (error) {
       toast.error("Error conectando Gmail. Intentá de nuevo.");
       setLoading(false);
@@ -158,7 +120,6 @@ export default function OnboardingPage() {
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[500px] bg-[radial-gradient(ellipse_at_center,rgba(124,58,237,0.1)_0%,transparent_70%)] pointer-events-none" />
 
       <div className="max-w-xl mx-auto relative">
-        {/* Header */}
         <div className="flex items-center justify-between mb-12">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#7C3AED] to-[#2563EB] flex items-center justify-center">
@@ -166,10 +127,7 @@ export default function OnboardingPage() {
             </div>
             <span className="font-bold tracking-tight">Nova Recover</span>
           </div>
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-1.5 text-sm text-[#94A3B8] hover:text-white transition-colors"
-          >
+          <button onClick={handleLogout} className="flex items-center gap-1.5 text-sm text-[#94A3B8] hover:text-white transition-colors">
             <LogOut className="w-4 h-4" />
             Salir
           </button>
@@ -190,17 +148,13 @@ export default function OnboardingPage() {
               <div key={step.id} className="flex items-center flex-1">
                 <div className="flex flex-col items-center gap-1.5">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all ${
-                    done
-                      ? "bg-[#7C3AED] text-white"
-                      : active
-                      ? "bg-gradient-to-br from-[#7C3AED] to-[#2563EB] text-white shadow-lg shadow-[rgba(124,58,237,0.4)]"
-                      : "bg-[#111118] border border-[rgba(124,58,237,0.2)] text-[#94A3B8]"
+                    done ? "bg-[#7C3AED] text-white"
+                    : active ? "bg-gradient-to-br from-[#7C3AED] to-[#2563EB] text-white shadow-lg shadow-[rgba(124,58,237,0.4)]"
+                    : "bg-[#111118] border border-[rgba(124,58,237,0.2)] text-[#94A3B8]"
                   }`}>
                     {done ? <CheckCircle className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
                   </div>
-                  <span className={`text-xs font-medium ${active ? "text-white" : "text-[#94A3B8]"}`}>
-                    {step.label}
-                  </span>
+                  <span className={`text-xs font-medium ${active ? "text-white" : "text-[#94A3B8]"}`}>{step.label}</span>
                 </div>
                 {idx < STEPS.length - 1 && (
                   <div className={`flex-1 h-px mx-3 mb-5 transition-colors ${currentStep > step.id ? "bg-[#7C3AED]" : "bg-[rgba(124,58,237,0.2)]"}`} />
@@ -210,10 +164,9 @@ export default function OnboardingPage() {
           })}
         </div>
 
-        {/* Step content */}
         <div className="bg-[#111118] border border-[rgba(124,58,237,0.2)] rounded-2xl p-8">
 
-          {/* Paso 1: TiendaNube */}
+          {/* Paso 1: TiendaNube OAuth */}
           {currentStep === 1 && (
             <div>
               <div className="flex items-center gap-3 mb-6">
@@ -222,51 +175,50 @@ export default function OnboardingPage() {
                 </div>
                 <div>
                   <h2 className="font-black text-xl">Conectar TiendaNube</h2>
-                  <p className="text-sm text-[#94A3B8]">Necesitamos acceso a tu tienda para detectar los carritos.</p>
+                  <p className="text-sm text-[#94A3B8]">Autorizá el acceso desde tu panel de TiendaNube.</p>
                 </div>
               </div>
 
-              <div className="bg-[rgba(124,58,237,0.08)] border border-[rgba(124,58,237,0.2)] rounded-xl p-4 mb-6">
-                <p className="text-sm text-[#94A3B8]">
-                  Encontrás estos datos en{" "}
-                  <span className="text-white font-medium">Tu tienda → Mis aplicaciones → API</span>{" "}
-                  dentro del panel de TiendaNube.
-                </p>
+              <div className="bg-[rgba(124,58,237,0.08)] border border-[rgba(124,58,237,0.2)] rounded-xl p-4 mb-6 space-y-2">
+                <p className="text-sm font-medium">¿Qué pasa cuando hacés clic?</p>
+                <ul className="space-y-1.5">
+                  {[
+                    "Te redirigimos a TiendaNube para que autoricés la app",
+                    "Nunca vemos tu contraseña — es OAuth oficial",
+                    "Podés revocar el acceso desde tu panel cuando quieras",
+                  ].map((t) => (
+                    <li key={t} className="flex items-start gap-2 text-sm text-[#94A3B8]">
+                      <CheckCircle className="w-3.5 h-3.5 text-[#7C3AED] mt-0.5 shrink-0" />
+                      {t}
+                    </li>
+                  ))}
+                </ul>
               </div>
 
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Store ID</label>
-                  <input
-                    type="text"
-                    placeholder="Ej: 123456"
-                    value={tnStoreId}
-                    onChange={(e) => setTnStoreId(e.target.value)}
-                    className="w-full bg-[#0a0a0f] border border-[rgba(124,58,237,0.25)] rounded-xl px-4 py-3 text-sm text-[#F1F5F9] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#7C3AED] transition-colors"
-                  />
-                  {tnErrors.tnStoreId && <p className="text-red-400 text-xs mt-1">{tnErrors.tnStoreId}</p>}
+              {tnConnected && (
+                <div className="flex items-center gap-3 bg-[rgba(34,197,94,0.1)] border border-[rgba(34,197,94,0.3)] rounded-xl p-4 mb-4">
+                  <CheckCircle className="w-5 h-5 text-green-400" />
+                  <span className="text-green-400 font-medium text-sm">TiendaNube conectada correctamente</span>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">API Token</label>
-                  <input
-                    type="password"
-                    placeholder="tu_api_token_aqui"
-                    value={tnApiToken}
-                    onChange={(e) => setTnApiToken(e.target.value)}
-                    className="w-full bg-[#0a0a0f] border border-[rgba(124,58,237,0.25)] rounded-xl px-4 py-3 text-sm text-[#F1F5F9] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#7C3AED] transition-colors"
-                  />
-                  {tnErrors.tnApiToken && <p className="text-red-400 text-xs mt-1">{tnErrors.tnApiToken}</p>}
-                </div>
-              </div>
+              )}
 
               <button
-                onClick={saveStep1}
+                onClick={connectTiendaNube}
                 disabled={loading}
-                className="mt-6 w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#7C3AED] to-[#2563EB] hover:opacity-90 disabled:opacity-60 text-white py-3.5 rounded-xl font-semibold transition-all"
+                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#7C3AED] to-[#2563EB] hover:opacity-90 disabled:opacity-60 text-white py-4 rounded-xl font-semibold transition-all shadow-lg shadow-[rgba(124,58,237,0.3)]"
               >
-                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                {loading ? "Guardando..." : "Conectar tienda →"}
+                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <ExternalLink className="w-5 h-5" />}
+                {loading ? "Redirigiendo a TiendaNube..." : tnConnected ? "Reconectar TiendaNube" : "Conectar con TiendaNube"}
               </button>
+
+              {tnConnected && (
+                <button
+                  onClick={() => setCurrentStep(2)}
+                  className="mt-3 w-full flex items-center justify-center gap-2 border border-[rgba(124,58,237,0.3)] hover:border-[rgba(124,58,237,0.6)] text-[#8B5CF6] hover:text-white py-3 rounded-xl text-sm font-medium transition-all"
+                >
+                  Continuar →
+                </button>
+              )}
             </div>
           )}
 
@@ -299,21 +251,19 @@ export default function OnboardingPage() {
                 </ul>
               </div>
 
-              {gmailConnected ? (
-                <div className="flex items-center gap-3 bg-[rgba(34,197,94,0.1)] border border-[rgba(34,197,94,0.3)] rounded-xl p-4 mb-6">
+              {gmailConnected && (
+                <div className="flex items-center gap-3 bg-[rgba(34,197,94,0.1)] border border-[rgba(34,197,94,0.3)] rounded-xl p-4 mb-4">
                   <CheckCircle className="w-5 h-5 text-green-400" />
                   <span className="text-green-400 font-medium text-sm">Gmail conectado correctamente</span>
                 </div>
-              ) : null}
+              )}
 
               <button
                 onClick={connectGmail}
                 disabled={loading}
                 className="w-full flex items-center justify-center gap-2 bg-white hover:bg-gray-100 disabled:opacity-60 text-gray-900 py-3.5 rounded-xl font-semibold transition-all mb-3"
               >
-                {loading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (
                   <svg className="w-5 h-5" viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                     <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -325,18 +275,12 @@ export default function OnboardingPage() {
               </button>
 
               {gmailConnected && (
-                <button
-                  onClick={() => setCurrentStep(3)}
-                  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#7C3AED] to-[#2563EB] hover:opacity-90 text-white py-3.5 rounded-xl font-semibold transition-all"
-                >
+                <button onClick={() => setCurrentStep(3)} className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#7C3AED] to-[#2563EB] hover:opacity-90 text-white py-3.5 rounded-xl font-semibold transition-all">
                   Continuar →
                 </button>
               )}
 
-              <button
-                onClick={() => setCurrentStep(1)}
-                className="mt-3 w-full text-sm text-[#94A3B8] hover:text-white transition-colors py-2"
-              >
+              <button onClick={() => setCurrentStep(1)} className="mt-3 w-full text-sm text-[#94A3B8] hover:text-white transition-colors py-2">
                 ← Volver al paso anterior
               </button>
             </div>
@@ -362,12 +306,7 @@ export default function OnboardingPage() {
                   <span className="text-[#94A3B8] mb-1">/mes</span>
                 </div>
                 <ul className="space-y-2">
-                  {[
-                    "Detección ilimitada de carritos",
-                    "Mails automáticos 24/7",
-                    "Dashboard de métricas",
-                    "Cancelás cuando querés",
-                  ].map((f) => (
+                  {["Detección ilimitada de carritos", "Mails automáticos 24/7", "Dashboard de métricas", "Cancelás cuando querés"].map((f) => (
                     <li key={f} className="flex items-center gap-2 text-sm">
                       <CheckCircle className="w-4 h-4 text-[#7C3AED]" />
                       {f}
@@ -385,14 +324,9 @@ export default function OnboardingPage() {
                 {loading ? "Redirigiendo a Stripe..." : "Ir al pago seguro"}
               </button>
 
-              <p className="text-center text-xs text-[#94A3B8] mt-3">
-                Pago seguro con Stripe. Podés cancelar en cualquier momento.
-              </p>
+              <p className="text-center text-xs text-[#94A3B8] mt-3">Pago seguro con Stripe. Podés cancelar en cualquier momento.</p>
 
-              <button
-                onClick={() => setCurrentStep(2)}
-                className="mt-3 w-full text-sm text-[#94A3B8] hover:text-white transition-colors py-2"
-              >
+              <button onClick={() => setCurrentStep(2)} className="mt-3 w-full text-sm text-[#94A3B8] hover:text-white transition-colors py-2">
                 ← Volver al paso anterior
               </button>
             </div>
