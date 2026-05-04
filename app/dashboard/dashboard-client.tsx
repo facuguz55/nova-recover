@@ -3,9 +3,19 @@
 import { useRouter } from "next/navigation";
 import {
   Zap, Mail, MousePointerClick, TrendingUp, Settings,
-  CheckCircle, Clock, XCircle, LogOut, ArrowRight, ShoppingCart
+  CheckCircle, Clock, XCircle, LogOut, ArrowRight, ShoppingCart, Inbox,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+
+interface AbandonedCart {
+  id: string;
+  customer_email: string | null;
+  customer_name: string | null;
+  checkout_url: string | null;
+  status: string;
+  abandoned_at: string;
+  email_sent_at: string | null;
+}
 
 interface Props {
   user: { email: string; name: string };
@@ -19,49 +29,54 @@ interface Props {
     status?: string;
     stripe_subscription_id?: string;
   } | null;
+  metrics: {
+    emailsSent: number;
+    conversions: number;
+    total: number;
+  };
+  recentCarts: AbandonedCart[];
 }
-
-// Datos mockeados para el MVP
-const MOCK_METRICS = {
-  emailsSent: 142,
-  clicks: 38,
-  conversions: 11,
-  recovered: 1243.50,
-};
-
-const MOCK_RECENT = [
-  { email: "maria@example.com", cart: "$8,500", status: "convertido", date: "Hoy 14:32" },
-  { email: "juan.perez@gmail.com", cart: "$3,200", status: "clic", date: "Hoy 11:05" },
-  { email: "comercial@tienda.com", cart: "$15,000", status: "enviado", date: "Ayer 20:18" },
-  { email: "cliente@mail.com", cart: "$4,800", status: "convertido", date: "Ayer 16:40" },
-  { email: "compras@negocio.ar", cart: "$6,100", status: "enviado", date: "Ayer 09:12" },
-];
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; color: string }> = {
     active: { label: "Activo", color: "text-green-400 bg-[rgba(34,197,94,0.1)] border-[rgba(34,197,94,0.3)]" },
+    trial: { label: "Prueba", color: "text-blue-400 bg-[rgba(37,99,235,0.1)] border-[rgba(37,99,235,0.3)]" },
     pending: { label: "Pendiente", color: "text-yellow-400 bg-[rgba(234,179,8,0.1)] border-[rgba(234,179,8,0.3)]" },
     inactive: { label: "Inactivo", color: "text-red-400 bg-[rgba(239,68,68,0.1)] border-[rgba(239,68,68,0.3)]" },
   };
   const s = map[status] ?? map.pending;
   return (
     <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full border ${s.color}`}>
-      {status === "active" ? <CheckCircle className="w-3 h-3" /> : status === "inactive" ? <XCircle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+      {status === "active" || status === "trial" ? <CheckCircle className="w-3 h-3" /> : status === "inactive" ? <XCircle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
       {s.label}
     </span>
   );
 }
 
-function EmailStatus({ status }: { status: string }) {
-  const map: Record<string, string> = {
-    convertido: "text-green-400",
-    clic: "text-blue-400",
-    enviado: "text-[#94A3B8]",
+function CartStatusBadge({ status }: { status: string }) {
+  const map: Record<string, { label: string; color: string }> = {
+    pending: { label: "Pendiente", color: "text-yellow-400" },
+    emailed: { label: "Mail enviado", color: "text-blue-400" },
+    recovered: { label: "Recuperado", color: "text-green-400" },
+    dismissed: { label: "Ignorado", color: "text-[#94A3B8]" },
   };
-  return <span className={`text-xs font-medium capitalize ${map[status] ?? "text-[#94A3B8]"}`}>{status}</span>;
+  const s = map[status] ?? { label: status, color: "text-[#94A3B8]" };
+  return <span className={`text-xs font-medium ${s.color}`}>{s.label}</span>;
 }
 
-export default function DashboardClient({ user, clientStatus, onboarding, subscription }: Props) {
+function formatDate(iso: string) {
+  const d = new Date(iso);
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffH = Math.floor(diffMs / 3600000);
+  if (diffH < 24) return `Hace ${diffH}h`;
+  const diffD = Math.floor(diffH / 24);
+  if (diffD === 1) return "Ayer";
+  if (diffD < 7) return `Hace ${diffD} días`;
+  return d.toLocaleDateString("es-AR", { day: "numeric", month: "short" });
+}
+
+export default function DashboardClient({ user, clientStatus, onboarding, subscription, metrics, recentCarts }: Props) {
   const router = useRouter();
 
   async function handleLogout() {
@@ -70,11 +85,11 @@ export default function DashboardClient({ user, clientStatus, onboarding, subscr
     router.push("/");
   }
 
-  const isActive = clientStatus === "active" || subscription?.status === "active";
+  const subStatus = subscription?.status;
+  const isActive = clientStatus === "active" || subStatus === "active" || subStatus === "trial";
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-[#F1F5F9]">
-      {/* Sidebar + top nav */}
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-[rgba(124,58,237,0.15)] bg-[rgba(10,10,15,0.95)] backdrop-blur-md h-16 flex items-center px-6">
         <div className="max-w-6xl mx-auto w-full flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -83,7 +98,6 @@ export default function DashboardClient({ user, clientStatus, onboarding, subscr
             </div>
             <span className="font-bold tracking-tight">Nova Recover</span>
           </div>
-
           <div className="flex items-center gap-4">
             <span className="text-sm text-[#94A3B8] hidden sm:block">{user.email}</span>
             <button
@@ -100,18 +114,16 @@ export default function DashboardClient({ user, clientStatus, onboarding, subscr
       <main className="pt-24 pb-16 px-6">
         <div className="max-w-6xl mx-auto">
 
-          {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10">
             <div>
               <h1 className="text-3xl font-black mb-1">
-                Hola, {user.name.split(" ")[0]} 👋
+                Hola, {user.name.split(" ")[0]}
               </h1>
-              <p className="text-[#94A3B8]">Acá está el resumen de tu sistema de recuperación.</p>
+              <p className="text-[#94A3B8]">Resumen de tu sistema de recuperación.</p>
             </div>
-            <StatusBadge status={isActive ? "active" : clientStatus} />
+            <StatusBadge status={subStatus === "trial" ? "trial" : isActive ? "active" : clientStatus} />
           </div>
 
-          {/* Alerta si no está activo */}
           {!isActive && (
             <div className="bg-[rgba(124,58,237,0.08)] border border-[rgba(124,58,237,0.3)] rounded-2xl p-5 mb-8 flex flex-col sm:flex-row items-start sm:items-center gap-4">
               <div className="flex-1">
@@ -132,32 +144,34 @@ export default function DashboardClient({ user, clientStatus, onboarding, subscr
             </div>
           )}
 
-          {/* Metrics cards */}
+          {/* Métricas reales */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             {[
               {
-                icon: <Mail className="w-5 h-5" />,
-                label: "Mails enviados",
-                value: isActive ? MOCK_METRICS.emailsSent.toString() : "—",
-                sub: "este mes",
+                icon: <ShoppingCart className="w-5 h-5" />,
+                label: "Carritos detectados",
+                value: metrics.total.toString(),
+                sub: "en total",
               },
               {
-                icon: <MousePointerClick className="w-5 h-5" />,
-                label: "Clics registrados",
-                value: isActive ? MOCK_METRICS.clicks.toString() : "—",
-                sub: "este mes",
+                icon: <Mail className="w-5 h-5" />,
+                label: "Mails enviados",
+                value: metrics.emailsSent.toString(),
+                sub: "de recuperación",
               },
               {
                 icon: <TrendingUp className="w-5 h-5" />,
-                label: "Conversiones",
-                value: isActive ? MOCK_METRICS.conversions.toString() : "—",
-                sub: "ventas recuperadas",
+                label: "Recuperados",
+                value: metrics.conversions.toString(),
+                sub: "ventas cerradas",
               },
               {
-                icon: <ShoppingCart className="w-5 h-5" />,
-                label: "Monto recuperado",
-                value: isActive ? `$${MOCK_METRICS.recovered.toLocaleString("es-AR")}` : "—",
-                sub: "este mes",
+                icon: <MousePointerClick className="w-5 h-5" />,
+                label: "Tasa de recuperación",
+                value: metrics.total > 0
+                  ? `${Math.round((metrics.conversions / metrics.total) * 100)}%`
+                  : "—",
+                sub: "sobre total detectados",
               },
             ].map((card) => (
               <div
@@ -175,28 +189,49 @@ export default function DashboardClient({ user, clientStatus, onboarding, subscr
           </div>
 
           <div className="grid lg:grid-cols-3 gap-6">
-            {/* Tabla de actividad reciente */}
+            {/* Tabla de carritos reales */}
             <div className="lg:col-span-2 bg-[#111118] border border-[rgba(124,58,237,0.2)] rounded-2xl p-6">
-              <h2 className="font-bold mb-5">Actividad reciente</h2>
-              {isActive ? (
+              <h2 className="font-bold mb-5">Carritos abandonados</h2>
+              {recentCarts.length > 0 ? (
                 <div className="space-y-3">
-                  {MOCK_RECENT.map((row, i) => (
-                    <div key={i} className="flex items-center justify-between py-2 border-b border-[rgba(255,255,255,0.05)] last:border-0">
+                  {recentCarts.map((cart) => (
+                    <div
+                      key={cart.id}
+                      className="flex items-center justify-between py-2 border-b border-[rgba(255,255,255,0.05)] last:border-0"
+                    >
                       <div>
-                        <p className="text-sm font-medium">{row.email}</p>
-                        <p className="text-xs text-[#94A3B8]">{row.date}</p>
+                        <p className="text-sm font-medium">
+                          {cart.customer_name || cart.customer_email || "Cliente desconocido"}
+                        </p>
+                        <p className="text-xs text-[#94A3B8]">
+                          {cart.customer_email ?? "—"} · {formatDate(cart.abandoned_at)}
+                        </p>
                       </div>
-                      <div className="text-right">
-                        <p className="text-sm font-semibold">{row.cart}</p>
-                        <EmailStatus status={row.status} />
+                      <div className="text-right flex flex-col items-end gap-1">
+                        <CartStatusBadge status={cart.status} />
+                        {cart.checkout_url && (
+                          <a
+                            href={cart.checkout_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-[#7C3AED] hover:underline"
+                          >
+                            Ver carrito →
+                          </a>
+                        )}
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <Mail className="w-10 h-10 text-[rgba(124,58,237,0.3)] mb-3" />
-                  <p className="text-[#94A3B8] text-sm">La actividad aparecerá cuando el sistema esté activo.</p>
+                  <Inbox className="w-10 h-10 text-[rgba(124,58,237,0.3)] mb-3" />
+                  <p className="text-[#94A3B8] text-sm">
+                    Todavía no hay carritos detectados.
+                  </p>
+                  <p className="text-xs text-[#64748B] mt-1">
+                    Aparecerán acá cuando TiendaNube notifique carritos abandonados.
+                  </p>
                 </div>
               )}
             </div>
@@ -242,8 +277,16 @@ export default function DashboardClient({ user, clientStatus, onboarding, subscr
                     <Zap className="w-4 h-4 text-[#94A3B8]" />
                     <span className="text-[#94A3B8]">Suscripción</span>
                   </div>
-                  <StatusBadge status={subscription?.status === "active" ? "active" : "pending"} />
+                  <StatusBadge status={subStatus ?? "pending"} />
                 </div>
+
+                {onboarding?.tn_store_id && (
+                  <div className="pt-2 border-t border-[rgba(255,255,255,0.05)]">
+                    <p className="text-xs text-[#94A3B8]">
+                      ID tienda: <span className="text-[#F1F5F9] font-mono">{onboarding.tn_store_id}</span>
+                    </p>
+                  </div>
+                )}
               </div>
 
               <button

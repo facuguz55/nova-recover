@@ -7,23 +7,26 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: client } = await supabase
-    .from("clients")
-    .select("*")
-    .eq("id", user.id)
-    .single();
+  const [
+    { data: client },
+    { data: onboarding },
+    { data: subscription },
+    { data: carts },
+  ] = await Promise.all([
+    supabase.from("clients").select("*").eq("id", user.id).single(),
+    supabase.from("onboarding_data").select("*").eq("client_id", user.id).single(),
+    supabase.from("subscriptions").select("*").eq("client_id", user.id).single(),
+    supabase
+      .from("abandoned_carts")
+      .select("*")
+      .eq("client_id", user.id)
+      .order("abandoned_at", { ascending: false })
+      .limit(50),
+  ]);
 
-  const { data: onboarding } = await supabase
-    .from("onboarding_data")
-    .select("*")
-    .eq("client_id", user.id)
-    .single();
-
-  const { data: subscription } = await supabase
-    .from("subscriptions")
-    .select("*")
-    .eq("client_id", user.id)
-    .single();
+  const cartList = carts ?? [];
+  const emailsSent = cartList.filter((c) => c.email_sent_at).length;
+  const conversions = cartList.filter((c) => c.status === "recovered").length;
 
   return (
     <DashboardClient
@@ -31,6 +34,8 @@ export default async function DashboardPage() {
       clientStatus={client?.status ?? "pending"}
       onboarding={onboarding}
       subscription={subscription}
+      metrics={{ emailsSent, conversions, total: cartList.length }}
+      recentCarts={cartList.slice(0, 10)}
     />
   );
 }
