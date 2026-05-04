@@ -1,6 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
+async function registerWebhook(storeId: number, accessToken: string, appUrl: string) {
+  const webhookUrl = `${appUrl}/api/tiendanube/webhooks/app-uninstalled`;
+
+  // Primero verificar si ya existe para no duplicar
+  const listRes = await fetch(`https://api.tiendanube.com/v1/${storeId}/webhooks`, {
+    headers: {
+      Authentication: `bearer ${accessToken}`,
+      "User-Agent": "Nova Recover (facuiguzman1@gmail.com)",
+    },
+  });
+
+  if (listRes.ok) {
+    const existing: { event: string }[] = await listRes.json();
+    const alreadyRegistered = existing.some((w) => w.event === "app/uninstalled");
+    if (alreadyRegistered) return;
+  }
+
+  await fetch(`https://api.tiendanube.com/v1/${storeId}/webhooks`, {
+    method: "POST",
+    headers: {
+      Authentication: `bearer ${accessToken}`,
+      "User-Agent": "Nova Recover (facuiguzman1@gmail.com)",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      event: "app/uninstalled",
+      url: webhookUrl,
+    }),
+  });
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
@@ -59,6 +90,9 @@ export async function GET(request: NextRequest) {
       tn_api_token: access_token,
     });
   }
+
+  // Registrar webhook app/uninstalled en TiendaNube para esta tienda
+  await registerWebhook(user_id, access_token, appUrl);
 
   return NextResponse.redirect(`${appUrl}/onboarding?tn_connected=1`);
 }
