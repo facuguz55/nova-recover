@@ -34,6 +34,9 @@ export default function OnboardingPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { router.push("/login"); return; }
 
+    // Detectar si el usuario acaba de conectar Google OAuth
+    const hasGoogle = user.identities?.some(i => i.provider === "google");
+
     const { data } = await supabase
       .from("onboarding_data")
       .select("*")
@@ -44,10 +47,23 @@ export default function OnboardingPage() {
       setOnboardingId(data.id);
       if (data.tn_store_id) setTnStoreId(data.tn_store_id);
       if (data.tn_api_token) setTnApiToken(data.tn_api_token);
-      setGmailConnected(data.gmail_connected ?? false);
 
-      if (data.gmail_connected) setCurrentStep(3);
-      else if (data.tn_store_id) setCurrentStep(2);
+      // Si tiene Google conectado y no estaba marcado, actualizar DB
+      if (hasGoogle && !data.gmail_connected) {
+        await supabase
+          .from("onboarding_data")
+          .update({ gmail_connected: true })
+          .eq("id", data.id);
+        setGmailConnected(true);
+        setCurrentStep(3);
+        toast.success("¡Gmail conectado correctamente!");
+      } else {
+        setGmailConnected(data.gmail_connected ?? false);
+        if (data.gmail_connected) setCurrentStep(3);
+        else if (data.tn_store_id) setCurrentStep(2);
+      }
+    } else if (hasGoogle) {
+      setGmailConnected(true);
     }
 
     setInitialLoading(false);
@@ -95,11 +111,11 @@ export default function OnboardingPage() {
   async function connectGmail() {
     setLoading(true);
     const supabase = createClient();
-    const { data, error } = await supabase.auth.signInWithOAuth({
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
         scopes: "email profile https://www.googleapis.com/auth/gmail.send",
-        redirectTo: `${window.location.origin}/onboarding`,
+        redirectTo: `${window.location.origin}/auth/callback?next=/onboarding`,
         queryParams: { access_type: "offline", prompt: "consent" },
       },
     });
