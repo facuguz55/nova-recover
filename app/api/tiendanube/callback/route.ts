@@ -50,6 +50,7 @@ export async function GET(request: NextRequest) {
     await supabase.from("onboarding_data").update({
       tn_store_id: String(user_id),
       tn_api_token: access_token,
+      tn_disconnected_at: null,
     }).eq("id", existing.id);
   } else {
     await supabase.from("onboarding_data").insert({

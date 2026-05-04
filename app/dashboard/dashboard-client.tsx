@@ -1,11 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Zap, Mail, MousePointerClick, TrendingUp, Settings,
   CheckCircle, Clock, XCircle, LogOut, ArrowRight, ShoppingCart, Inbox,
+  AlertTriangle, Loader2, Unplug,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
 
 interface AbandonedCart {
   id: string;
@@ -25,6 +28,7 @@ interface Props {
     gmail_connected?: boolean;
     completed_at?: string;
   } | null;
+  tnDisconnectedAt: string | null;
   subscription: {
     status?: string;
     stripe_subscription_id?: string;
@@ -76,8 +80,10 @@ function formatDate(iso: string) {
   return d.toLocaleDateString("es-AR", { day: "numeric", month: "short" });
 }
 
-export default function DashboardClient({ user, clientStatus, onboarding, subscription, metrics, recentCarts }: Props) {
+export default function DashboardClient({ user, clientStatus, onboarding, tnDisconnectedAt, subscription, metrics, recentCarts }: Props) {
   const router = useRouter();
+  const [disconnecting, setDisconnecting] = useState(false);
+  const [confirmDisconnect, setConfirmDisconnect] = useState(false);
 
   async function handleLogout() {
     const supabase = createClient();
@@ -85,8 +91,27 @@ export default function DashboardClient({ user, clientStatus, onboarding, subscr
     router.push("/");
   }
 
+  async function handleDisconnectTN() {
+    setDisconnecting(true);
+    try {
+      const res = await fetch("/api/tiendanube/disconnect", { method: "DELETE" });
+      if (res.ok) {
+        toast.success("TiendaNube desconectada correctamente.");
+        router.refresh();
+      } else {
+        toast.error("Error al desconectar. Intentá de nuevo.");
+      }
+    } catch {
+      toast.error("Error de red. Intentá de nuevo.");
+    } finally {
+      setDisconnecting(false);
+      setConfirmDisconnect(false);
+    }
+  }
+
   const subStatus = subscription?.status;
   const isActive = clientStatus === "active" || subStatus === "active" || subStatus === "trial";
+  const isTnConnected = !!onboarding?.tn_store_id && !tnDisconnectedAt;
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-[#F1F5F9]">
@@ -123,6 +148,37 @@ export default function DashboardClient({ user, clientStatus, onboarding, subscr
             </div>
             <StatusBadge status={subStatus === "trial" ? "trial" : isActive ? "active" : clientStatus} />
           </div>
+
+          {/* Banner: TiendaNube desconectada */}
+          {tnDisconnectedAt && (
+            <div className="bg-[rgba(239,68,68,0.08)] border border-[rgba(239,68,68,0.4)] rounded-2xl p-5 mb-6 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div className="flex items-center gap-3 flex-1">
+                <div className="w-10 h-10 rounded-xl bg-[rgba(239,68,68,0.15)] flex items-center justify-center shrink-0">
+                  <AlertTriangle className="w-5 h-5 text-red-400" />
+                </div>
+                <div>
+                  <p className="font-semibold text-red-400">TiendaNube desconectada</p>
+                  <p className="text-sm text-[#94A3B8] mt-0.5">
+                    Tu tienda se desconectó el{" "}
+                    {new Date(tnDisconnectedAt).toLocaleDateString("es-AR", {
+                      day: "numeric",
+                      month: "long",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                    . El sistema dejó de funcionar hasta que vuelvas a conectarla.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => router.push("/onboarding")}
+                className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-all shrink-0"
+              >
+                Reconectar ahora
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
 
           {!isActive && (
             <div className="bg-[rgba(124,58,237,0.08)] border border-[rgba(124,58,237,0.3)] rounded-2xl p-5 mb-8 flex flex-col sm:flex-row items-start sm:items-center gap-4">
@@ -245,9 +301,13 @@ export default function DashboardClient({ user, clientStatus, onboarding, subscr
                     <ShoppingCart className="w-4 h-4 text-[#94A3B8]" />
                     <span className="text-[#94A3B8]">Tienda</span>
                   </div>
-                  {onboarding?.tn_store_id ? (
+                  {isTnConnected ? (
                     <span className="text-xs font-medium text-green-400 flex items-center gap-1">
                       <CheckCircle className="w-3 h-3" /> Conectada
+                    </span>
+                  ) : tnDisconnectedAt ? (
+                    <span className="text-xs font-medium text-red-400 flex items-center gap-1">
+                      <XCircle className="w-3 h-3" /> Desconectada
                     </span>
                   ) : (
                     <span className="text-xs font-medium text-yellow-400 flex items-center gap-1">
@@ -281,10 +341,44 @@ export default function DashboardClient({ user, clientStatus, onboarding, subscr
                 </div>
 
                 {onboarding?.tn_store_id && (
-                  <div className="pt-2 border-t border-[rgba(255,255,255,0.05)]">
+                  <div className="pt-2 border-t border-[rgba(255,255,255,0.05)] space-y-3">
                     <p className="text-xs text-[#94A3B8]">
                       ID tienda: <span className="text-[#F1F5F9] font-mono">{onboarding.tn_store_id}</span>
                     </p>
+
+                    {isTnConnected && !confirmDisconnect && (
+                      <button
+                        onClick={() => setConfirmDisconnect(true)}
+                        className="flex items-center gap-1.5 text-xs text-[#94A3B8] hover:text-red-400 transition-colors"
+                      >
+                        <Unplug className="w-3.5 h-3.5" />
+                        Desconectar TiendaNube
+                      </button>
+                    )}
+
+                    {isTnConnected && confirmDisconnect && (
+                      <div className="bg-[rgba(239,68,68,0.08)] border border-[rgba(239,68,68,0.3)] rounded-xl p-3 space-y-2">
+                        <p className="text-xs text-red-400 font-medium">¿Desconectar la tienda?</p>
+                        <p className="text-xs text-[#94A3B8]">El sistema dejará de detectar carritos abandonados hasta que vuelvas a conectarla.</p>
+                        <div className="flex gap-2 pt-1">
+                          <button
+                            onClick={handleDisconnectTN}
+                            disabled={disconnecting}
+                            className="flex items-center gap-1 text-xs bg-red-500 hover:bg-red-600 disabled:opacity-60 text-white px-3 py-1.5 rounded-lg font-medium transition-colors"
+                          >
+                            {disconnecting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Unplug className="w-3 h-3" />}
+                            {disconnecting ? "Desconectando..." : "Confirmar"}
+                          </button>
+                          <button
+                            onClick={() => setConfirmDisconnect(false)}
+                            disabled={disconnecting}
+                            className="text-xs text-[#94A3B8] hover:text-white px-3 py-1.5 rounded-lg transition-colors"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

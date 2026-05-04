@@ -33,6 +33,7 @@ export default async function DashboardPage() {
       user={{ email: user.email ?? "", name: client?.name ?? user.email ?? "" }}
       clientStatus={client?.status ?? "pending"}
       onboarding={onboarding}
+      tnDisconnectedAt={onboarding?.tn_disconnected_at ?? null}
       subscription={subscription}
       metrics={{ emailsSent, conversions, total: cartList.length }}
       recentCarts={cartList.slice(0, 10)}

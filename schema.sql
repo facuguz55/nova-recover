@@ -17,6 +17,7 @@ create table if not exists onboarding_data (
   client_id uuid references clients(id) on delete cascade,
   tn_store_id text,
   tn_api_token text,
+  tn_disconnected_at timestamptz,
   gmail_connected boolean default false,
   sheets_connected boolean default false,
   completed_at timestamptz,
