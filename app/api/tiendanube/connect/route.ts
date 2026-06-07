@@ -11,6 +11,7 @@ export async function GET() {
   if (!appId) return NextResponse.json({ error: "App no configurada" }, { status: 500 });
 
   const redirectUri = `${appUrl}/api/tiendanube/callback`;
-  const authUrl = `https://www.tiendanube.com/apps/${appId}/authorize?redirect_uri=${encodeURIComponent(redirectUri)}`;
+  const scopes = "read_products read_customers read_orders write_orders";
+  const authUrl = `https://www.tiendanube.com/apps/${appId}/authorize?redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}`;
   return NextResponse.redirect(authUrl);
 }
