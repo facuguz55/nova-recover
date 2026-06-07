@@ -102,7 +102,7 @@ export default function RegisterPage() {
               <label className="block text-sm font-medium mb-2">Nombre de tu tienda</label>
               <input
                 type="text"
-                placeholder="Ej: Right Botines, Mi Tienda..."
+                placeholder="Ej: Zara, Nike, Tu Tienda..."
                 value={form.storeName}
                 maxLength={60}
                 onChange={(e) => setForm({ ...form, storeName: e.target.value })}
