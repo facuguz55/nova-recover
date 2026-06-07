@@ -7,6 +7,10 @@ import { Zap, Eye, EyeOff, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 
+function sanitize(str: string) {
+  return str.trim().replace(/[<>"']/g, "");
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -17,7 +21,9 @@ export default function LoginPage() {
   function validate() {
     const e: Record<string, string> = {};
     if (!form.email.trim()) e.email = "El email es obligatorio";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Email inválido";
     if (!form.password) e.password = "La contraseña es obligatoria";
+    else if (form.password.length > 128) e.password = "Contraseña inválida";
     return e;
   }
 
@@ -30,7 +36,7 @@ export default function LoginPage() {
 
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithPassword({
-      email: form.email,
+      email: sanitize(form.email),
       password: form.password,
     });
 
@@ -62,13 +68,14 @@ export default function LoginPage() {
           <h1 className="text-2xl font-black mb-1">Bienvenido de vuelta</h1>
           <p className="text-[#94A3B8] text-sm mb-8">Ingresá a tu cuenta para ver tus métricas.</p>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-5" noValidate>
             <div>
               <label className="block text-sm font-medium mb-2">Email</label>
               <input
                 type="email"
                 placeholder="tu@email.com"
                 value={form.email}
+                maxLength={254}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
                 className="w-full bg-[#0a0a0f] border border-[rgba(124,58,237,0.25)] rounded-xl px-4 py-3 text-sm text-[#F1F5F9] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#7C3AED] transition-colors"
               />
@@ -82,6 +89,7 @@ export default function LoginPage() {
                   type={showPassword ? "text" : "password"}
                   placeholder="Tu contraseña"
                   value={form.password}
+                  maxLength={128}
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
                   className="w-full bg-[#0a0a0f] border border-[rgba(124,58,237,0.25)] rounded-xl px-4 py-3 pr-11 text-sm text-[#F1F5F9] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#7C3AED] transition-colors"
                 />

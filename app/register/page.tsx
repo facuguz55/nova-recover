@@ -7,6 +7,14 @@ import { Zap, Eye, EyeOff, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 
+function sanitize(str: string) {
+  return str.trim().replace(/[<>"']/g, "");
+}
+
+function validateEmail(email: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
 export default function RegisterPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -16,11 +24,15 @@ export default function RegisterPage() {
 
   function validate() {
     const e: Record<string, string> = {};
-    if (!form.name.trim()) e.name = "El nombre es obligatorio";
-    if (!form.email.trim()) e.email = "El email es obligatorio";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Email inválido";
+    const name = sanitize(form.name);
+    const email = sanitize(form.email);
+    if (!name) e.name = "El nombre es obligatorio";
+    else if (name.length > 100) e.name = "Nombre demasiado largo";
+    if (!email) e.email = "El email es obligatorio";
+    else if (!validateEmail(email)) e.email = "Email inválido";
     if (!form.password) e.password = "La contraseña es obligatoria";
-    else if (form.password.length < 6) e.password = "Mínimo 6 caracteres";
+    else if (form.password.length < 8) e.password = "Mínimo 8 caracteres";
+    else if (form.password.length > 128) e.password = "Contraseña demasiado larga";
     return e;
   }
 
@@ -33,10 +45,10 @@ export default function RegisterPage() {
 
     const supabase = createClient();
     const { error } = await supabase.auth.signUp({
-      email: form.email,
+      email: sanitize(form.email),
       password: form.password,
       options: {
-        data: { name: form.name },
+        data: { name: sanitize(form.name) },
         emailRedirectTo: `${window.location.origin}/onboarding`,
       },
     });
@@ -56,7 +68,6 @@ export default function RegisterPage() {
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-[radial-gradient(ellipse_at_center,rgba(124,58,237,0.12)_0%,transparent_70%)] pointer-events-none" />
 
       <div className="w-full max-w-md relative">
-        {/* Logo */}
         <div className="flex justify-center mb-8">
           <Link href="/" className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#7C3AED] to-[#2563EB] flex items-center justify-center">
@@ -70,13 +81,14 @@ export default function RegisterPage() {
           <h1 className="text-2xl font-black mb-1">Crear cuenta</h1>
           <p className="text-[#94A3B8] text-sm mb-8">Empezá a recuperar ventas hoy.</p>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-5" noValidate>
             <div>
               <label className="block text-sm font-medium mb-2">Nombre</label>
               <input
                 type="text"
                 placeholder="Tu nombre"
                 value={form.name}
+                maxLength={100}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 className="w-full bg-[#0a0a0f] border border-[rgba(124,58,237,0.25)] rounded-xl px-4 py-3 text-sm text-[#F1F5F9] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#7C3AED] transition-colors"
               />
@@ -89,6 +101,7 @@ export default function RegisterPage() {
                 type="email"
                 placeholder="tu@email.com"
                 value={form.email}
+                maxLength={254}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
                 className="w-full bg-[#0a0a0f] border border-[rgba(124,58,237,0.25)] rounded-xl px-4 py-3 text-sm text-[#F1F5F9] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#7C3AED] transition-colors"
               />
@@ -100,8 +113,9 @@ export default function RegisterPage() {
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
-                  placeholder="Mínimo 6 caracteres"
+                  placeholder="Mínimo 8 caracteres"
                   value={form.password}
+                  maxLength={128}
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
                   className="w-full bg-[#0a0a0f] border border-[rgba(124,58,237,0.25)] rounded-xl px-4 py-3 pr-11 text-sm text-[#F1F5F9] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#7C3AED] transition-colors"
                 />
