@@ -37,6 +37,14 @@ export async function middleware(request: NextRequest) {
     }
   )
 
+  // Llamadas internas a /api/provision con el secret correcto pasan sin sesión
+  if (pathname.startsWith('/api/provision')) {
+    const internalSecret = request.headers.get('x-internal-secret')
+    if (internalSecret && process.env.PROVISION_INTERNAL_SECRET && internalSecret === process.env.PROVISION_INTERNAL_SECRET) {
+      return supabaseResponse
+    }
+  }
+
   const { data: { user } } = await supabase.auth.getUser()
   const isProtected = ['/dashboard', '/onboarding'].some(p => pathname.startsWith(p))
   const isProtectedApi = [
