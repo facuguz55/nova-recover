@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { reprovision } from "@/lib/provision";
 
 async function registerWebhook(storeId: number, accessToken: string, appUrl: string) {
   const webhookUrl = `${appUrl}/api/tiendanube/webhooks/app-uninstalled`;
@@ -73,7 +74,7 @@ export async function GET(request: NextRequest) {
 
   const { data: existing } = await supabase
     .from("onboarding_data")
-    .select("id")
+    .select("id, n8n_client_id, completed_at")
     .eq("client_id", user.id)
     .single();
 
@@ -83,6 +84,11 @@ export async function GET(request: NextRequest) {
       tn_api_token: access_token,
       tn_disconnected_at: null,
     }).eq("id", existing.id);
+
+    // Si ya estaba provisionado, recrear workflows con el token nuevo
+    if (existing.n8n_client_id) {
+      reprovision(user.id).catch((e) => console.error("Reprovision error:", e));
+    }
   } else {
     const storeName = (user.user_metadata?.store_name as string | undefined) ?? "";
     await supabase.from("onboarding_data").insert({
@@ -96,5 +102,6 @@ export async function GET(request: NextRequest) {
   // Registrar webhook app/uninstalled en TiendaNube para esta tienda
   await registerWebhook(user_id, access_token, appUrl);
 
-  return NextResponse.redirect(`${appUrl}/onboarding?tn_connected=1`);
+  const redirectPath = existing?.completed_at ? "/dashboard?tn_reconnected=1" : "/onboarding?tn_connected=1";
+  return NextResponse.redirect(`${appUrl}${redirectPath}`);
 }

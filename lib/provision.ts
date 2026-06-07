@@ -88,7 +88,7 @@ function buildVerificarConversiones(clientId: string, tnStoreId: string, tnApiTo
   };
 }
 
-export async function runProvision(userId: string): Promise<{ success: boolean; clientId?: string; already_provisioned?: boolean; error?: string }> {
+export async function runProvision(userId: string, options?: { force?: boolean }): Promise<{ success: boolean; clientId?: string; already_provisioned?: boolean; error?: string }> {
   const admin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -104,7 +104,7 @@ export async function runProvision(userId: string): Promise<{ success: boolean; 
     return { success: false, error: "Faltan datos de TiendaNube" };
   }
 
-  if (onboarding.n8n_client_id) {
+  if (onboarding.n8n_client_id && !options?.force) {
     return { success: true, already_provisioned: true };
   }
 
@@ -142,4 +142,43 @@ export async function runProvision(userId: string): Promise<{ success: boolean; 
   }).eq("client_id", userId);
 
   return { success: true, clientId };
+}
+
+export async function reprovision(userId: string): Promise<{ success: boolean; error?: string }> {
+  const admin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
+  const { data: onboarding } = await admin
+    .from("onboarding_data")
+    .select("n8n_workflow_tracking, n8n_workflow_recuperador, n8n_workflow_conversiones, n8n_client_id")
+    .eq("client_id", userId)
+    .single();
+
+  // Eliminar workflows viejos de n8n (ignorar errores si ya no existen)
+  const ids = [
+    onboarding?.n8n_workflow_tracking,
+    onboarding?.n8n_workflow_recuperador,
+    onboarding?.n8n_workflow_conversiones,
+  ].filter(Boolean);
+
+  await Promise.allSettled(
+    ids.map((id) =>
+      fetch(`${N8N_BASE_URL}/api/v1/workflows/${id}`, {
+        method: "DELETE",
+        headers: { "X-N8N-API-KEY": process.env.N8N_API_KEY! },
+      })
+    )
+  );
+
+  // Limpiar referencias viejas para que runProvision no devuelva already_provisioned
+  await admin.from("onboarding_data").update({
+    n8n_workflow_tracking: null,
+    n8n_workflow_recuperador: null,
+    n8n_workflow_conversiones: null,
+    n8n_client_id: null,
+  }).eq("client_id", userId);
+
+  return runProvision(userId);
 }
