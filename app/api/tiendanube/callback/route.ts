@@ -84,10 +84,12 @@ export async function GET(request: NextRequest) {
       tn_disconnected_at: null,
     }).eq("id", existing.id);
   } else {
+    const storeName = (user.user_metadata?.store_name as string | undefined) ?? "";
     await supabase.from("onboarding_data").insert({
       client_id: user.id,
       tn_store_id: String(user_id),
       tn_api_token: access_token,
+      email_sender_name: storeName,
     });
   }
 

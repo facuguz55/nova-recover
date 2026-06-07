@@ -19,15 +19,18 @@ export default function RegisterPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [form, setForm] = useState({ name: "", storeName: "", email: "", password: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   function validate() {
     const e: Record<string, string> = {};
     const name = sanitize(form.name);
+    const storeName = sanitize(form.storeName);
     const email = sanitize(form.email);
-    if (!name) e.name = "El nombre es obligatorio";
+    if (!name) e.name = "Tu nombre es obligatorio";
     else if (name.length > 100) e.name = "Nombre demasiado largo";
+    if (!storeName) e.storeName = "El nombre de la tienda es obligatorio";
+    else if (storeName.length > 60) e.storeName = "Nombre demasiado largo";
     if (!email) e.email = "El email es obligatorio";
     else if (!validateEmail(email)) e.email = "Email inválido";
     if (!form.password) e.password = "La contraseña es obligatoria";
@@ -48,7 +51,7 @@ export default function RegisterPage() {
       email: sanitize(form.email),
       password: form.password,
       options: {
-        data: { name: sanitize(form.name) },
+        data: { name: sanitize(form.name), store_name: sanitize(form.storeName) },
         emailRedirectTo: `${window.location.origin}/onboarding`,
       },
     });
@@ -83,16 +86,30 @@ export default function RegisterPage() {
 
           <form onSubmit={handleSubmit} className="space-y-5" noValidate>
             <div>
-              <label className="block text-sm font-medium mb-2">Nombre</label>
+              <label className="block text-sm font-medium mb-2">Tu nombre</label>
               <input
                 type="text"
-                placeholder="Tu nombre"
+                placeholder="Juan García"
                 value={form.name}
                 maxLength={100}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 className="w-full bg-[#0a0a0f] border border-[rgba(124,58,237,0.25)] rounded-xl px-4 py-3 text-sm text-[#F1F5F9] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#7C3AED] transition-colors"
               />
               {errors.name && <p className="text-red-400 text-xs mt-1">{errors.name}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Nombre de tu tienda</label>
+              <input
+                type="text"
+                placeholder="Ej: Right Botines, Mi Tienda..."
+                value={form.storeName}
+                maxLength={60}
+                onChange={(e) => setForm({ ...form, storeName: e.target.value })}
+                className="w-full bg-[#0a0a0f] border border-[rgba(124,58,237,0.25)] rounded-xl px-4 py-3 text-sm text-[#F1F5F9] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#7C3AED] transition-colors"
+              />
+              <p className="text-xs text-[#64748B] mt-1.5">Aparece como remitente en los mails de recuperación.</p>
+              {errors.storeName && <p className="text-red-400 text-xs mt-1">{errors.storeName}</p>}
             </div>
 
             <div>
