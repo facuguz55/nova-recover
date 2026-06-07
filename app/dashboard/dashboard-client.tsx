@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Zap, Mail, MousePointerClick, TrendingUp, Settings,
+  Zap, Mail, MousePointerClick, TrendingUp,
   CheckCircle, Clock, XCircle, LogOut, ArrowRight, ShoppingCart, Inbox,
   AlertTriangle, Loader2, Unplug,
 } from "lucide-react";
@@ -366,13 +366,15 @@ export default function DashboardClient({ user, clientStatus, onboarding, tnDisc
                 )}
               </div>
 
-              <button
-                onClick={() => router.push("/onboarding")}
-                className="mt-6 w-full flex items-center justify-center gap-2 border border-[rgba(124,58,237,0.3)] hover:border-[rgba(124,58,237,0.6)] text-[#8B5CF6] hover:text-white py-3 rounded-xl text-sm font-medium transition-all"
-              >
-                <Settings className="w-4 h-4" />
-                Ver configuración
-              </button>
+              {!isTnConnected && (
+                <button
+                  onClick={() => window.location.href = "/api/tiendanube/connect"}
+                  className="mt-6 w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#7C3AED] to-[#2563EB] hover:opacity-90 text-white py-3 rounded-xl text-sm font-semibold transition-all"
+                >
+                  <ShoppingCart className="w-4 h-4" />
+                  Reconectar TiendaNube
+                </button>
+              )}
             </div>
           </div>
         </div>

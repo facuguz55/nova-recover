@@ -52,6 +52,11 @@ function OnboardingContent() {
       .eq("client_id", user.id)
       .single();
 
+    if (data?.completed_at) {
+      router.replace("/dashboard");
+      return;
+    }
+
     if (data) {
       const isTnConnected = !!data.tn_store_id && !data.tn_disconnected_at;
       setTnConnected(isTnConnected);

@@ -62,6 +62,20 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // Si el usuario ya completó el onboarding, no puede volver a él
+  if (user && pathname.startsWith('/onboarding')) {
+    const { data: onb } = await supabase
+      .from('onboarding_data')
+      .select('completed_at')
+      .eq('client_id', user.id)
+      .single()
+    if (onb?.completed_at) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/dashboard'
+      return NextResponse.redirect(url)
+    }
+  }
+
   // Headers de seguridad
   supabaseResponse.headers.set('X-Frame-Options', 'DENY')
   supabaseResponse.headers.set('X-Content-Type-Options', 'nosniff')

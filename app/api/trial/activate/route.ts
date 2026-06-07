@@ -28,8 +28,8 @@ export async function POST(req: Request) {
     .eq("client_id", user.id)
     .single();
 
-  // No permitir activar trial si ya tiene una suscripción activa o pagada
-  if (existing && (existing.status === "active")) {
+  // No permitir activar trial si ya tiene suscripción activa o trial
+  if (existing && (existing.status === "active" || existing.status === "trial")) {
     return NextResponse.json({ error: "Ya tenés una suscripción activa" }, { status: 400 });
   }
 
