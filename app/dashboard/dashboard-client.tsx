@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
-  Zap, Mail, MousePointerClick, TrendingUp,
+  Zap, Mail, MousePointerClick, TrendingUp, Settings,
   CheckCircle, Clock, XCircle, LogOut, ArrowRight, ShoppingCart, Inbox,
   AlertTriangle, Loader2, Unplug,
 } from "lucide-react";
@@ -124,6 +125,13 @@ export default function DashboardClient({ user, clientStatus, onboarding, tnDisc
           </div>
           <div className="flex items-center gap-4">
             <span className="text-sm text-[#94A3B8] hidden sm:block">{user.email}</span>
+            <Link
+              href="/settings"
+              className="flex items-center gap-1.5 text-sm text-[#94A3B8] hover:text-white transition-colors"
+            >
+              <Settings className="w-4 h-4" />
+              <span className="hidden sm:inline">Configuración</span>
+            </Link>
             <button
               onClick={handleLogout}
               className="flex items-center gap-1.5 text-sm text-[#94A3B8] hover:text-white transition-colors"

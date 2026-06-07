@@ -46,13 +46,14 @@ export async function middleware(request: NextRequest) {
   }
 
   const { data: { user } } = await supabase.auth.getUser()
-  const isProtected = ['/dashboard', '/onboarding'].some(p => pathname.startsWith(p))
+  const isProtected = ['/dashboard', '/onboarding', '/settings'].some(p => pathname.startsWith(p))
   const isProtectedApi = [
     '/api/provision',
     '/api/trial',
     '/api/tiendanube/connect',
     '/api/tiendanube/disconnect',
     '/api/stripe/checkout',
+    '/api/settings',
   ].some(p => pathname.startsWith(p))
 
   if (!user && (isProtected || isProtectedApi)) {
