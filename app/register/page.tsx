@@ -62,7 +62,7 @@ export default function RegisterPage() {
       return;
     }
 
-    toast.success("¡Cuenta creada! Revisá tu email para confirmar.");
+    toast.success("¡Cuenta creada!");
     router.push("/onboarding");
   }
 
