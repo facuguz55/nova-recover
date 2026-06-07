@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
+import { EMAIL_TEMPLATES } from "@/lib/email-templates";
 
 interface Props {
   user: { id: string; email: string };
@@ -18,6 +19,8 @@ interface Props {
     tn_store_id: string | null;
     tn_disconnected_at: string | null;
     email_sender_name: string;
+    email_template_id: string | null;
+    email_subject: string | null;
     n8n_client_id: string | null;
     completed_at: string | null;
   };
@@ -57,6 +60,10 @@ export default function SettingsClient({ user, client, onboarding, subscription 
   const [storeName, setStoreName] = useState(onboarding.email_sender_name);
   const [savingProfile, setSavingProfile] = useState(false);
 
+  const [selectedTemplate, setSelectedTemplate] = useState(onboarding.email_template_id ?? "dark-minimal");
+  const [emailSubject, setEmailSubject] = useState(onboarding.email_subject ?? "Completaste tu carrito en {store}");
+  const [savingEmail, setSavingEmail] = useState(false);
+
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleteInput, setDeleteInput] = useState("");
   const [deleting, setDeleting] = useState(false);
@@ -95,6 +102,26 @@ export default function SettingsClient({ user, client, onboarding, subscription 
     } finally {
       setSavingProfile(false);
     }
+  }
+
+  async function saveEmailSettings() {
+    if (!emailSubject.trim()) { toast.error("El asunto no puede estar vacío"); return; }
+    setSavingEmail(true);
+    try {
+      const res = await fetch("/api/settings/email", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ template_id: selectedTemplate, email_subject: emailSubject.trim() }),
+      });
+      if (res.ok) {
+        toast.success("Plantilla guardada. Los workflows se están actualizando…");
+        router.refresh();
+      } else {
+        const d = await res.json();
+        toast.error(d.error ?? "Error al guardar");
+      }
+    } catch { toast.error("Error de red"); }
+    finally { setSavingEmail(false); }
   }
 
   async function handleDisconnectTN() {
@@ -332,6 +359,72 @@ export default function SettingsClient({ user, client, onboarding, subscription 
                   </p>
                 </div>
               )}
+            </div>
+          </Section>
+
+          {/* Plantilla de email */}
+          <Section title="Plantilla de email">
+            <div className="space-y-5">
+              <Field label="Asunto del email" hint="Usá {store} para insertar el nombre de tu tienda automáticamente">
+                <input
+                  type="text"
+                  value={emailSubject}
+                  maxLength={120}
+                  onChange={(e) => setEmailSubject(e.target.value)}
+                  className="w-full bg-[#0a0a0f] border border-[rgba(124,58,237,0.25)] focus:border-[#7C3AED] rounded-xl px-4 py-3 text-sm text-[#F1F5F9] outline-none transition-colors"
+                />
+                <p className="text-xs text-[#64748B] mt-1">
+                  Vista previa: <span className="text-[#94A3B8]">{emailSubject.replace(/\{store\}/g, storeName || "Tu Tienda")}</span>
+                </p>
+              </Field>
+
+              <div>
+                <p className="text-sm font-medium text-[#F1F5F9] mb-3">Diseño del email</p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {EMAIL_TEMPLATES.map((tpl) => {
+                    const active = selectedTemplate === tpl.id;
+                    return (
+                      <button
+                        key={tpl.id}
+                        onClick={() => setSelectedTemplate(tpl.id)}
+                        className={`relative rounded-xl overflow-hidden border-2 transition-all text-left ${active ? "border-[#7C3AED] shadow-lg shadow-[rgba(124,58,237,0.3)]" : "border-[rgba(255,255,255,0.08)] hover:border-[rgba(124,58,237,0.4)]"}`}
+                      >
+                        {/* Preview color block */}
+                        <div className="h-16 flex" style={{ background: tpl.palette.bg }}>
+                          <div className="w-1 h-full" style={{ background: tpl.palette.accent }} />
+                          <div className="flex-1 flex flex-col justify-center px-2 gap-1">
+                            <div className="h-1.5 rounded-full w-3/4" style={{ background: tpl.palette.text, opacity: 0.6 }} />
+                            <div className="h-1 rounded-full w-1/2" style={{ background: tpl.palette.text, opacity: 0.3 }} />
+                            <div className="h-3 rounded mt-1 w-2/3" style={{ background: tpl.palette.accent, opacity: 0.9 }} />
+                          </div>
+                        </div>
+                        <div className="px-2 py-1.5 bg-[#111118]">
+                          <p className="text-xs font-semibold text-[#F1F5F9] truncate">{tpl.name}</p>
+                        </div>
+                        {active && (
+                          <div className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-[#7C3AED] flex items-center justify-center">
+                            <CheckCircle className="w-3 h-3 text-white" />
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+                {EMAIL_TEMPLATES.find((t) => t.id === selectedTemplate) && (
+                  <p className="text-xs text-[#64748B] mt-2">
+                    {EMAIL_TEMPLATES.find((t) => t.id === selectedTemplate)!.description}
+                  </p>
+                )}
+              </div>
+
+              <button
+                onClick={saveEmailSettings}
+                disabled={savingEmail}
+                className="flex items-center gap-2 bg-gradient-to-r from-[#7C3AED] to-[#2563EB] hover:opacity-90 disabled:opacity-60 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-all"
+              >
+                {savingEmail ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                {savingEmail ? "Guardando y actualizando…" : "Guardar plantilla"}
+              </button>
             </div>
           </Section>
 

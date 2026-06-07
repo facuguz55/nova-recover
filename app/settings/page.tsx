@@ -25,6 +25,8 @@ export default async function SettingsPage() {
         tn_store_id: onboarding?.tn_store_id ?? null,
         tn_disconnected_at: onboarding?.tn_disconnected_at ?? null,
         email_sender_name: onboarding?.email_sender_name ?? "",
+        email_template_id: onboarding?.email_template_id ?? "dark-minimal",
+        email_subject: onboarding?.email_subject ?? "Completaste tu carrito en {store}",
         n8n_client_id: onboarding?.n8n_client_id ?? null,
         completed_at: onboarding?.completed_at ?? null,
       }}
