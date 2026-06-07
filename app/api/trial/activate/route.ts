@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { createClient } from "@supabase/supabase-js";
 import { rateLimit } from "@/lib/rate-limit";
+import { runProvision } from "@/lib/provision";
 
 export async function POST(req: Request) {
   const supabase = await createServerClient();
@@ -47,17 +48,8 @@ export async function POST(req: Request) {
   await admin.from("clients").update({ status: "active" }).eq("id", user.id);
   await admin.from("onboarding_data").update({ completed_at: new Date().toISOString() }).eq("client_id", user.id);
 
-  // Provisionar workflows con secret interno
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   try {
-    await fetch(`${appUrl}/api/provision`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-internal-secret": process.env.PROVISION_INTERNAL_SECRET ?? "",
-      },
-      body: JSON.stringify({ user_id: user.id }),
-    });
+    await runProvision(user.id);
   } catch (e) {
     console.error("Provision error (trial):", e);
   }
