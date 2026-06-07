@@ -30,6 +30,7 @@ function OnboardingContent() {
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [tnConnected, setTnConnected] = useState(false);
+  const [senderName, setSenderName] = useState("");
 
   useEffect(() => {
     loadProgress();
@@ -54,6 +55,7 @@ function OnboardingContent() {
     if (data) {
       const isTnConnected = !!data.tn_store_id && !data.tn_disconnected_at;
       setTnConnected(isTnConnected);
+      if (data.email_sender_name) setSenderName(data.email_sender_name);
       if (isTnConnected) {
         setCurrentStep(2);
         if (justConnectedTN) toast.success("¡TiendaNube conectada correctamente!");
@@ -68,8 +70,20 @@ function OnboardingContent() {
     window.location.href = "/api/tiendanube/connect";
   }
 
+  async function saveSenderName() {
+    if (!senderName.trim()) return;
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase
+      .from("onboarding_data")
+      .update({ email_sender_name: senderName.trim() })
+      .eq("client_id", user.id);
+  }
+
   async function goToCheckout() {
     setLoading(true);
+    await saveSenderName();
     try {
       const res = await fetch("/api/stripe/checkout", { method: "POST" });
       const { url } = await res.json();
@@ -83,6 +97,7 @@ function OnboardingContent() {
 
   async function activateTrial() {
     setLoading(true);
+    await saveSenderName();
     try {
       const res = await fetch("/api/trial/activate", { method: "POST" });
       if (res.ok) {
@@ -247,6 +262,21 @@ function OnboardingContent() {
                     </li>
                   ))}
                 </ul>
+              </div>
+
+              <div className="mb-5">
+                <label className="block text-xs font-bold text-[#94A3B8] uppercase tracking-widest mb-2">
+                  Nombre del remitente
+                </label>
+                <input
+                  type="text"
+                  value={senderName}
+                  onChange={(e) => setSenderName(e.target.value)}
+                  placeholder="Ej: Right Botines, Mi Tienda..."
+                  maxLength={60}
+                  className="w-full bg-[#0a0a0f] border border-[rgba(124,58,237,0.25)] focus:border-[#7C3AED] rounded-xl px-4 py-3 text-sm text-[#F1F5F9] placeholder-[#4A5568] outline-none transition-colors"
+                />
+                <p className="text-xs text-[#4A5568] mt-1.5">Aparece como el nombre del que envía los mails de recuperación.</p>
               </div>
 
               <button
