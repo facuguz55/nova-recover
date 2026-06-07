@@ -69,3 +69,10 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
+
+-- Columnas para tracking de workflows n8n por cliente
+alter table onboarding_data 
+  add column if not exists n8n_workflow_tracking text,
+  add column if not exists n8n_workflow_recuperador text,
+  add column if not exists n8n_workflow_conversiones text,
+  add column if not exists n8n_client_id text;

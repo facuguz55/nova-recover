@@ -36,18 +36,24 @@ export async function POST(req: NextRequest) {
     });
 
     await supabase.from("clients").upsert({ id: userId, status: "active" });
+    await supabase.from("onboarding_data").update({ completed_at: new Date().toISOString() }).eq("client_id", userId);
 
-    await supabase.from("onboarding_data").update({
-      completed_at: new Date().toISOString(),
-    }).eq("client_id", userId);
+    // Provisionar workflows en n8n
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+    try {
+      await fetch(`${appUrl}/api/provision`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: userId }),
+      });
+    } catch (e) {
+      console.error("Provision error (stripe):", e);
+    }
   }
 
   if (event.type === "customer.subscription.deleted") {
     const sub = event.data.object as Stripe.Subscription;
-    await supabase.from("subscriptions")
-      .update({ status: "canceled" })
-      .eq("stripe_subscription_id", sub.id);
-
+    await supabase.from("subscriptions").update({ status: "canceled" }).eq("stripe_subscription_id", sub.id);
     const { data } = await supabase.from("subscriptions").select("client_id").eq("stripe_subscription_id", sub.id).single();
     if (data) await supabase.from("clients").update({ status: "inactive" }).eq("id", data.client_id);
   }
@@ -55,9 +61,7 @@ export async function POST(req: NextRequest) {
   if (event.type === "invoice.payment_failed") {
     const invoice = event.data.object as Stripe.Invoice & { subscription?: string };
     if (invoice.subscription) {
-      await supabase.from("subscriptions")
-        .update({ status: "past_due" })
-        .eq("stripe_subscription_id", invoice.subscription);
+      await supabase.from("subscriptions").update({ status: "past_due" }).eq("stripe_subscription_id", invoice.subscription);
     }
   }
 

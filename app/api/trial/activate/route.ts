@@ -33,17 +33,21 @@ export async function POST() {
     }
   }
 
-  // Marcar cliente como activo
-  await admin
-    .from("clients")
-    .update({ status: "active" })
-    .eq("id", user.id);
+  await admin.from("clients").update({ status: "active" }).eq("id", user.id);
+  await admin.from("onboarding_data").update({ completed_at: new Date().toISOString() }).eq("client_id", user.id);
 
-  // Marcar onboarding como completado
-  await admin
-    .from("onboarding_data")
-    .update({ completed_at: new Date().toISOString() })
-    .eq("client_id", user.id);
+  // Provisionar workflows en n8n
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  try {
+    await fetch(`${appUrl}/api/provision`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user_id: user.id }),
+    });
+  } catch (e) {
+    console.error("Provision error (trial):", e);
+    // No fallar el trial por error de provisioning
+  }
 
   return NextResponse.json({ success: true });
 }
