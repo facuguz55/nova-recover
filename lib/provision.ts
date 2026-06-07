@@ -20,7 +20,7 @@ async function n8nRequest(path: string, method: string, body?: object) {
 function buildWebhookTracking(clientId: string, supabaseAnon: string) {
   return {
     name: `${clientId} - Webhook Tracking`,
-    active: false,
+
     settings: { executionOrder: "v1" },
     connections: {
       "Webhook Track Carrito": { main: [[{ node: "Guardar Click Supabase", type: "main", index: 0 }]] },
@@ -39,7 +39,7 @@ function buildRecuperador(clientId: string, tnStoreId: string, tnApiToken: strin
 
   return {
     name: `${clientId} - Recuperador de Carritos`,
-    active: false,
+
     settings: { executionOrder: "v1" },
     connections: {
       "Trigger cada 2 horas": { main: [[{ node: "Consultar Carritos TiendaNube", type: "main", index: 0 }, { node: "Leer Emails Enviados", type: "main", index: 0 }]] },
@@ -68,7 +68,7 @@ function buildRecuperador(clientId: string, tnStoreId: string, tnApiToken: strin
 function buildVerificarConversiones(clientId: string, tnStoreId: string, tnApiToken: string, supabaseAnon: string) {
   return {
     name: `${clientId} - Verificar Conversiones`,
-    active: false,
+
     settings: { executionOrder: "v1" },
     connections: {
       "Trigger cada 6 horas": { main: [[{ node: "Leer Clicks Supabase", type: "main", index: 0 }, { node: "Leer Ordenes TiendaNube", type: "main", index: 0 }]] },
