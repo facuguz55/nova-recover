@@ -1,9 +1,21 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { rateLimit } from '@/lib/rate-limit'
 
 export async function middleware(request: NextRequest) {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     return NextResponse.next({ request })
+  }
+
+  const pathname = request.nextUrl.pathname
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0] ?? request.headers.get("x-real-ip") ?? "unknown"
+
+  // Rate limit global por IP en rutas de auth — 20 requests por minuto
+  if (pathname.startsWith("/api/") || pathname === "/login" || pathname === "/register") {
+    const { allowed } = rateLimit(`ip:${ip}:${pathname}`, 20, 60 * 1000)
+    if (!allowed) {
+      return new NextResponse("Too Many Requests", { status: 429 })
+    }
   }
 
   let supabaseResponse = NextResponse.next({ request })
@@ -26,21 +38,14 @@ export async function middleware(request: NextRequest) {
   )
 
   const { data: { user } } = await supabase.auth.getUser()
-
-  const pathname = request.nextUrl.pathname
-
-  // Rutas protegidas — requieren login
-  const protectedPaths = ['/dashboard', '/onboarding']
-  const isProtected = protectedPaths.some(p => pathname.startsWith(p))
-
-  // Rutas de API protegidas — requieren login (excepto webhooks y auth)
-  const protectedApiPaths = [
+  const isProtected = ['/dashboard', '/onboarding'].some(p => pathname.startsWith(p))
+  const isProtectedApi = [
     '/api/provision',
     '/api/trial',
     '/api/tiendanube/connect',
     '/api/tiendanube/disconnect',
-  ]
-  const isProtectedApi = protectedApiPaths.some(p => pathname.startsWith(p))
+    '/api/stripe/checkout',
+  ].some(p => pathname.startsWith(p))
 
   if (!user && (isProtected || isProtectedApi)) {
     if (isProtectedApi) {
@@ -51,18 +56,18 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Redirigir usuario logueado fuera de login/register
   if (user && (pathname === '/login' || pathname === '/register')) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
     return NextResponse.redirect(url)
   }
 
-  // Headers de seguridad en todas las respuestas
+  // Headers de seguridad
   supabaseResponse.headers.set('X-Frame-Options', 'DENY')
   supabaseResponse.headers.set('X-Content-Type-Options', 'nosniff')
   supabaseResponse.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
   supabaseResponse.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+  supabaseResponse.headers.set('X-XSS-Protection', '1; mode=block')
 
   return supabaseResponse
 }
