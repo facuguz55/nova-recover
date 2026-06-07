@@ -68,26 +68,20 @@ export default async function LandingPage() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            {isLoggedIn ? (
-              <Link
-                href="/dashboard"
-                className="flex items-center gap-2 bg-[#0d0d14] hover:bg-[#111118] text-[#A78BFA] px-8 py-4 rounded-xl font-semibold text-lg transition-all hover:scale-105 border border-[#7C3AED] shadow-[0_0_20px_rgba(124,58,237,0.45)] hover:shadow-[0_0_32px_rgba(124,58,237,0.65)]"
-              >
-                <LayoutDashboard className="w-5 h-5" />
-                Ir al dashboard
-              </Link>
-            ) : (
-              <Link
-                href="/register"
-                className="flex items-center gap-2 bg-gradient-to-r from-[#7C3AED] to-[#2563EB] hover:opacity-90 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all hover:scale-105 shadow-lg shadow-[rgba(124,58,237,0.3)]"
-              >
-                Empezar ahora
-                <ArrowRight className="w-5 h-5" />
-              </Link>
-            )}
-            {!isLoggedIn && (
-              <span className="text-[#94A3B8] text-sm">Sin tarjeta de crédito para probar</span>
-            )}
+            <Link
+              href="/register"
+              className="flex items-center gap-2 bg-gradient-to-r from-[#7C3AED] to-[#2563EB] hover:opacity-90 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all hover:scale-105 shadow-lg shadow-[rgba(124,58,237,0.3)]"
+            >
+              Empezar ahora
+              <ArrowRight className="w-5 h-5" />
+            </Link>
+            <Link
+              href="/dashboard"
+              className="flex items-center gap-2 bg-[#0d0d14] hover:bg-[#111118] text-[#A78BFA] px-8 py-4 rounded-xl font-semibold text-lg transition-all hover:scale-105 border border-[#7C3AED] shadow-[0_0_20px_rgba(124,58,237,0.45)] hover:shadow-[0_0_32px_rgba(124,58,237,0.65)]"
+            >
+              <LayoutDashboard className="w-5 h-5" />
+              Ir al dashboard
+            </Link>
           </div>
 
           <div className="mt-16 grid grid-cols-3 gap-6 max-w-lg mx-auto">
@@ -256,23 +250,20 @@ export default async function LandingPage() {
               ))}
             </ul>
 
-            {isLoggedIn ? (
-              <Link
-                href="/dashboard"
-                className="flex items-center justify-center gap-2 w-full bg-[#0d0d14] hover:bg-[#111118] text-[#A78BFA] py-4 rounded-xl font-semibold text-lg transition-all hover:scale-[1.02] border border-[#7C3AED] shadow-[0_0_20px_rgba(124,58,237,0.45)] hover:shadow-[0_0_32px_rgba(124,58,237,0.65)]"
-              >
-                <LayoutDashboard className="w-5 h-5" />
-                Ir al dashboard
-              </Link>
-            ) : (
-              <Link
-                href="/register"
-                className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-[#7C3AED] to-[#2563EB] hover:opacity-90 text-white py-4 rounded-xl font-semibold text-lg transition-all hover:scale-[1.02] shadow-lg shadow-[rgba(124,58,237,0.3)]"
-              >
-                Empezar ahora
-                <ArrowRight className="w-5 h-5" />
-              </Link>
-            )}
+            <Link
+              href="/register"
+              className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-[#7C3AED] to-[#2563EB] hover:opacity-90 text-white py-4 rounded-xl font-semibold text-lg transition-all hover:scale-[1.02] shadow-lg shadow-[rgba(124,58,237,0.3)]"
+            >
+              Empezar ahora
+              <ArrowRight className="w-5 h-5" />
+            </Link>
+            <Link
+              href="/dashboard"
+              className="flex items-center justify-center gap-2 w-full bg-[#0d0d14] hover:bg-[#111118] text-[#A78BFA] py-4 rounded-xl font-semibold text-lg transition-all hover:scale-[1.02] border border-[#7C3AED] shadow-[0_0_20px_rgba(124,58,237,0.45)] hover:shadow-[0_0_32px_rgba(124,58,237,0.65)]"
+            >
+              <LayoutDashboard className="w-5 h-5" />
+              Ir al dashboard
+            </Link>
           </div>
         </div>
       </section>
@@ -288,15 +279,7 @@ export default async function LandingPage() {
             En promedio el 70% de los carritos se abandonan. Con Nova Recover
             recuperás una parte importante de esa plata, en automático.
           </p>
-          {isLoggedIn ? (
-            <Link
-              href="/dashboard"
-              className="inline-flex items-center gap-2 bg-[#0d0d14] hover:bg-[#111118] text-[#A78BFA] px-10 py-5 rounded-xl font-bold text-lg transition-all hover:scale-105 border border-[#7C3AED] shadow-[0_0_24px_rgba(124,58,237,0.5)] hover:shadow-[0_0_40px_rgba(124,58,237,0.7)]"
-            >
-              <LayoutDashboard className="w-5 h-5" />
-              Ir al dashboard
-            </Link>
-          ) : (
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
               href="/register"
               className="inline-flex items-center gap-2 bg-gradient-to-r from-[#7C3AED] to-[#2563EB] hover:opacity-90 text-white px-10 py-5 rounded-xl font-bold text-lg transition-all hover:scale-105 shadow-xl shadow-[rgba(124,58,237,0.3)]"
@@ -304,7 +287,14 @@ export default async function LandingPage() {
               Empezar ahora — USD 59/mes
               <ArrowRight className="w-5 h-5" />
             </Link>
-          )}
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center gap-2 bg-[#0d0d14] hover:bg-[#111118] text-[#A78BFA] px-10 py-5 rounded-xl font-bold text-lg transition-all hover:scale-105 border border-[#7C3AED] shadow-[0_0_24px_rgba(124,58,237,0.5)] hover:shadow-[0_0_40px_rgba(124,58,237,0.7)]"
+            >
+              <LayoutDashboard className="w-5 h-5" />
+              Ir al dashboard
+            </Link>
+          </div>
         </div>
       </section>
 
