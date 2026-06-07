@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, Fragment } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Zap, ShoppingCart, CreditCard, CheckCircle, Loader2, ExternalLink, LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -152,27 +152,29 @@ function OnboardingContent() {
         </div>
 
         {/* Stepper */}
-        <div className="flex items-center mb-10">
+        <div className="flex items-start mb-10">
           {STEPS.map((step, idx) => {
             const Icon = step.icon;
             const done = currentStep > step.id;
             const active = currentStep === step.id;
             return (
-              <div key={step.id} className="flex items-center flex-1">
-                <div className="flex flex-col items-center gap-1.5">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all ${
+              <Fragment key={step.id}>
+                <div className="flex flex-col items-center gap-2 shrink-0">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
                     done ? "bg-[#7C3AED] text-white"
                     : active ? "bg-gradient-to-br from-[#7C3AED] to-[#2563EB] text-white shadow-lg shadow-[rgba(124,58,237,0.4)]"
                     : "bg-[#111118] border border-[rgba(124,58,237,0.2)] text-[#94A3B8]"
                   }`}>
                     {done ? <CheckCircle className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
                   </div>
-                  <span className={`text-xs font-medium ${active ? "text-white" : "text-[#94A3B8]"}`}>{step.label}</span>
+                  <span className={`text-xs font-semibold ${active ? "text-white" : done ? "text-[#7C3AED]" : "text-[#94A3B8]"}`}>
+                    {step.label}
+                  </span>
                 </div>
                 {idx < STEPS.length - 1 && (
-                  <div className={`flex-1 h-px mx-3 mb-5 transition-colors ${currentStep > step.id ? "bg-[#7C3AED]" : "bg-[rgba(124,58,237,0.2)]"}`} />
+                  <div className={`flex-1 h-px mt-5 mx-4 transition-colors ${currentStep > step.id ? "bg-[#7C3AED]" : "bg-[rgba(124,58,237,0.15)]"}`} />
                 )}
-              </div>
+              </Fragment>
             );
           })}
         </div>
