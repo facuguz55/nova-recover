@@ -2,14 +2,13 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Zap, ShoppingCart, Mail, CreditCard, CheckCircle, Loader2, ExternalLink, LogOut } from "lucide-react";
+import { Zap, ShoppingCart, CreditCard, CheckCircle, Loader2, ExternalLink, LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 
 const STEPS = [
   { id: 1, label: "Tienda", icon: ShoppingCart },
-  { id: 2, label: "Gmail", icon: Mail },
-  { id: 3, label: "Activar", icon: CreditCard },
+  { id: 2, label: "Activar", icon: CreditCard },
 ];
 
 export default function OnboardingPage() {
@@ -31,7 +30,6 @@ function OnboardingContent() {
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [tnConnected, setTnConnected] = useState(false);
-  const [gmailConnected, setGmailConnected] = useState(false);
 
   useEffect(() => {
     loadProgress();
@@ -42,7 +40,6 @@ function OnboardingContent() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { router.push("/login"); return; }
 
-    const hasGoogle = user.identities?.some(i => i.provider === "google");
     const justConnectedTN = searchParams.get("tn_connected") === "1";
     const tnError = searchParams.get("tn_error");
 
@@ -57,22 +54,10 @@ function OnboardingContent() {
     if (data) {
       const isTnConnected = !!data.tn_store_id && !data.tn_disconnected_at;
       setTnConnected(isTnConnected);
-
-      if (hasGoogle && !data.gmail_connected) {
-        await supabase.from("onboarding_data").update({ gmail_connected: true }).eq("id", data.id);
-        setGmailConnected(true);
-        setCurrentStep(3);
-        toast.success("¡Gmail conectado correctamente!");
-      } else {
-        setGmailConnected(data.gmail_connected ?? false);
-        if (data.gmail_connected) setCurrentStep(3);
-        else if (isTnConnected) {
-          setCurrentStep(2);
-          if (justConnectedTN) toast.success("¡TiendaNube conectada correctamente!");
-        }
+      if (isTnConnected) {
+        setCurrentStep(2);
+        if (justConnectedTN) toast.success("¡TiendaNube conectada correctamente!");
       }
-    } else if (hasGoogle) {
-      setGmailConnected(true);
     }
 
     setInitialLoading(false);
@@ -81,23 +66,6 @@ function OnboardingContent() {
   function connectTiendaNube() {
     setLoading(true);
     window.location.href = "/api/tiendanube/connect";
-  }
-
-  async function connectGmail() {
-    setLoading(true);
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        scopes: "email profile https://www.googleapis.com/auth/gmail.send",
-        redirectTo: `${window.location.origin}/auth/callback?next=/onboarding`,
-        queryParams: { access_type: "offline", prompt: "consent" },
-      },
-    });
-    if (error) {
-      toast.error("Error conectando Gmail. Intentá de nuevo.");
-      setLoading(false);
-    }
   }
 
   async function goToCheckout() {
@@ -121,7 +89,8 @@ function OnboardingContent() {
         toast.success("¡Prueba activada! Redirigiendo al dashboard...");
         setTimeout(() => router.push("/dashboard"), 1200);
       } else {
-        toast.error("Error activando la prueba. Intentá de nuevo.");
+        const data = await res.json();
+        toast.error(data.error || "Error activando la prueba.");
         setLoading(false);
       }
     } catch {
@@ -164,7 +133,7 @@ function OnboardingContent() {
 
         <div className="text-center mb-10">
           <h1 className="text-3xl font-black mb-2">Configurá tu cuenta</h1>
-          <p className="text-[#94A3B8]">Solo 3 pasos para tener el sistema activo.</p>
+          <p className="text-[#94A3B8]">Solo 2 pasos para tener el sistema activo.</p>
         </div>
 
         {/* Stepper */}
@@ -195,7 +164,7 @@ function OnboardingContent() {
 
         <div className="bg-[#111118] border border-[rgba(124,58,237,0.2)] rounded-2xl p-8">
 
-          {/* Paso 1: TiendaNube OAuth */}
+          {/* Paso 1: TiendaNube */}
           {currentStep === 1 && (
             <div>
               <div className="flex items-center gap-3 mb-6">
@@ -251,72 +220,8 @@ function OnboardingContent() {
             </div>
           )}
 
-          {/* Paso 2: Gmail */}
+          {/* Paso 2: Activar */}
           {currentStep === 2 && (
-            <div>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#7C3AED] to-[#2563EB] flex items-center justify-center">
-                  <Mail className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h2 className="font-black text-xl">Conectar Gmail</h2>
-                  <p className="text-sm text-[#94A3B8]">Los mails de recuperación salen desde tu cuenta.</p>
-                </div>
-              </div>
-
-              <div className="bg-[rgba(124,58,237,0.08)] border border-[rgba(124,58,237,0.2)] rounded-xl p-4 mb-6 space-y-2">
-                <p className="text-sm font-medium">¿Por qué conectar Gmail?</p>
-                <ul className="space-y-1">
-                  {[
-                    "Los mails llegan desde una dirección conocida por el cliente",
-                    "Mayor tasa de apertura y menos rebotes",
-                    "Solo usamos el permiso de envío — no leemos tus mails",
-                  ].map((t) => (
-                    <li key={t} className="flex items-start gap-2 text-sm text-[#94A3B8]">
-                      <CheckCircle className="w-3.5 h-3.5 text-[#7C3AED] mt-0.5 shrink-0" />
-                      {t}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {gmailConnected && (
-                <div className="flex items-center gap-3 bg-[rgba(34,197,94,0.1)] border border-[rgba(34,197,94,0.3)] rounded-xl p-4 mb-4">
-                  <CheckCircle className="w-5 h-5 text-green-400" />
-                  <span className="text-green-400 font-medium text-sm">Gmail conectado correctamente</span>
-                </div>
-              )}
-
-              <button
-                onClick={connectGmail}
-                disabled={loading}
-                className="w-full flex items-center justify-center gap-2 bg-white hover:bg-gray-100 disabled:opacity-60 text-gray-900 py-3.5 rounded-xl font-semibold transition-all mb-3"
-              >
-                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (
-                  <svg className="w-5 h-5" viewBox="0 0 24 24">
-                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                  </svg>
-                )}
-                {loading ? "Redirigiendo..." : gmailConnected ? "Reconectar Gmail" : "Conectar con Google"}
-              </button>
-
-              {gmailConnected && (
-                <button onClick={() => setCurrentStep(3)} className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#7C3AED] to-[#2563EB] hover:opacity-90 text-white py-3.5 rounded-xl font-semibold transition-all">
-                  Continuar →
-                </button>
-              )}
-
-              <button onClick={() => setCurrentStep(1)} className="mt-3 w-full text-sm text-[#94A3B8] hover:text-white transition-colors py-2">
-                ← Volver al paso anterior
-              </button>
-            </div>
-          )}
-
-          {/* Paso 3: Activar */}
-          {currentStep === 3 && (
             <div>
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#7C3AED] to-[#2563EB] flex items-center justify-center">
@@ -370,7 +275,7 @@ function OnboardingContent() {
                 Probar gratis sin tarjeta
               </button>
 
-              <button onClick={() => setCurrentStep(2)} className="mt-3 w-full text-sm text-[#94A3B8] hover:text-white transition-colors py-2">
+              <button onClick={() => setCurrentStep(1)} className="mt-3 w-full text-sm text-[#94A3B8] hover:text-white transition-colors py-2">
                 ← Volver al paso anterior
               </button>
             </div>
