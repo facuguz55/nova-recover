@@ -1,7 +1,12 @@
 import Link from "next/link";
-import { ArrowRight, ShoppingCart, Mail, Zap, CheckCircle, TrendingUp, Bell, BarChart3 } from "lucide-react";
+import { ArrowRight, ShoppingCart, Mail, Zap, CheckCircle, TrendingUp, Bell, BarChart3, LayoutDashboard } from "lucide-react";
+import { createClient } from "@/lib/supabase/server";
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const isLoggedIn = !!user;
+
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-[#F1F5F9]">
       {/* Navbar */}
@@ -14,15 +19,27 @@ export default function LandingPage() {
             <span className="font-bold text-lg tracking-tight">Nova Recover</span>
           </div>
           <div className="flex items-center gap-4">
-            <Link href="/login" className="text-sm text-[#94A3B8] hover:text-white transition-colors">
-              Iniciar sesión
-            </Link>
-            <Link
-              href="/register"
-              className="text-sm bg-[#7C3AED] hover:bg-[#8B5CF6] text-white px-4 py-2 rounded-lg font-medium transition-colors"
-            >
-              Empezar gratis
-            </Link>
+            {isLoggedIn ? (
+              <Link
+                href="/dashboard"
+                className="flex items-center gap-1.5 text-sm bg-[#0d0d14] hover:bg-[#111118] text-[#A78BFA] px-4 py-2 rounded-lg font-medium transition-all border border-[#7C3AED] shadow-[0_0_12px_rgba(124,58,237,0.35)] hover:shadow-[0_0_20px_rgba(124,58,237,0.55)]"
+              >
+                <LayoutDashboard className="w-3.5 h-3.5" />
+                Ir al dashboard
+              </Link>
+            ) : (
+              <>
+                <Link href="/login" className="text-sm text-[#94A3B8] hover:text-white transition-colors">
+                  Iniciar sesión
+                </Link>
+                <Link
+                  href="/register"
+                  className="text-sm bg-[#7C3AED] hover:bg-[#8B5CF6] text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                >
+                  Empezar gratis
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </nav>
@@ -51,14 +68,26 @@ export default function LandingPage() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link
-              href="/register"
-              className="flex items-center gap-2 bg-gradient-to-r from-[#7C3AED] to-[#2563EB] hover:opacity-90 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all hover:scale-105 shadow-lg shadow-[rgba(124,58,237,0.3)]"
-            >
-              Empezar ahora
-              <ArrowRight className="w-5 h-5" />
-            </Link>
-            <span className="text-[#94A3B8] text-sm">Sin tarjeta de crédito para probar</span>
+            {isLoggedIn ? (
+              <Link
+                href="/dashboard"
+                className="flex items-center gap-2 bg-[#0d0d14] hover:bg-[#111118] text-[#A78BFA] px-8 py-4 rounded-xl font-semibold text-lg transition-all hover:scale-105 border border-[#7C3AED] shadow-[0_0_20px_rgba(124,58,237,0.45)] hover:shadow-[0_0_32px_rgba(124,58,237,0.65)]"
+              >
+                <LayoutDashboard className="w-5 h-5" />
+                Ir al dashboard
+              </Link>
+            ) : (
+              <Link
+                href="/register"
+                className="flex items-center gap-2 bg-gradient-to-r from-[#7C3AED] to-[#2563EB] hover:opacity-90 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all hover:scale-105 shadow-lg shadow-[rgba(124,58,237,0.3)]"
+              >
+                Empezar ahora
+                <ArrowRight className="w-5 h-5" />
+              </Link>
+            )}
+            {!isLoggedIn && (
+              <span className="text-[#94A3B8] text-sm">Sin tarjeta de crédito para probar</span>
+            )}
           </div>
 
           <div className="mt-16 grid grid-cols-3 gap-6 max-w-lg mx-auto">
@@ -227,13 +256,23 @@ export default function LandingPage() {
               ))}
             </ul>
 
-            <Link
-              href="/register"
-              className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-[#7C3AED] to-[#2563EB] hover:opacity-90 text-white py-4 rounded-xl font-semibold text-lg transition-all hover:scale-[1.02] shadow-lg shadow-[rgba(124,58,237,0.3)]"
-            >
-              Empezar ahora
-              <ArrowRight className="w-5 h-5" />
-            </Link>
+            {isLoggedIn ? (
+              <Link
+                href="/dashboard"
+                className="flex items-center justify-center gap-2 w-full bg-[#0d0d14] hover:bg-[#111118] text-[#A78BFA] py-4 rounded-xl font-semibold text-lg transition-all hover:scale-[1.02] border border-[#7C3AED] shadow-[0_0_20px_rgba(124,58,237,0.45)] hover:shadow-[0_0_32px_rgba(124,58,237,0.65)]"
+              >
+                <LayoutDashboard className="w-5 h-5" />
+                Ir al dashboard
+              </Link>
+            ) : (
+              <Link
+                href="/register"
+                className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-[#7C3AED] to-[#2563EB] hover:opacity-90 text-white py-4 rounded-xl font-semibold text-lg transition-all hover:scale-[1.02] shadow-lg shadow-[rgba(124,58,237,0.3)]"
+              >
+                Empezar ahora
+                <ArrowRight className="w-5 h-5" />
+              </Link>
+            )}
           </div>
         </div>
       </section>
@@ -249,13 +288,23 @@ export default function LandingPage() {
             En promedio el 70% de los carritos se abandonan. Con Nova Recover
             recuperás una parte importante de esa plata, en automático.
           </p>
-          <Link
-            href="/register"
-            className="inline-flex items-center gap-2 bg-gradient-to-r from-[#7C3AED] to-[#2563EB] hover:opacity-90 text-white px-10 py-5 rounded-xl font-bold text-lg transition-all hover:scale-105 shadow-xl shadow-[rgba(124,58,237,0.3)]"
-          >
-            Empezar ahora — USD 59/mes
-            <ArrowRight className="w-5 h-5" />
-          </Link>
+          {isLoggedIn ? (
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center gap-2 bg-[#0d0d14] hover:bg-[#111118] text-[#A78BFA] px-10 py-5 rounded-xl font-bold text-lg transition-all hover:scale-105 border border-[#7C3AED] shadow-[0_0_24px_rgba(124,58,237,0.5)] hover:shadow-[0_0_40px_rgba(124,58,237,0.7)]"
+            >
+              <LayoutDashboard className="w-5 h-5" />
+              Ir al dashboard
+            </Link>
+          ) : (
+            <Link
+              href="/register"
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-[#7C3AED] to-[#2563EB] hover:opacity-90 text-white px-10 py-5 rounded-xl font-bold text-lg transition-all hover:scale-105 shadow-xl shadow-[rgba(124,58,237,0.3)]"
+            >
+              Empezar ahora — USD 59/mes
+              <ArrowRight className="w-5 h-5" />
+            </Link>
+          )}
         </div>
       </section>
 
