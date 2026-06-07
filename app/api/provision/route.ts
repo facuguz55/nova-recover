@@ -7,7 +7,7 @@ const N8N_BASE_URL = "https://devn8n.santafeia.shop";
 const N8N_API_KEY = process.env.N8N_API_KEY!;
 const NOVA_SUPABASE_URL = "https://ooqwjywukihfztmkffym.supabase.co";
 const WEBHOOK_BASE = "https://devwebhookn8n.santafeia.shop";
-const GMAIL_CREDENTIAL_ID = "gEbteWyyA09LiUSE";
+const SMTP_CREDENTIAL_ID = process.env.N8N_SMTP_CREDENTIAL_ID ?? "";
 
 // Token secreto para llamadas internas (stripe webhook → provision)
 const INTERNAL_SECRET = process.env.PROVISION_INTERNAL_SECRET!;
@@ -90,8 +90,8 @@ function buildRecuperador(clientId: string, tnStoreId: string, tnApiToken: strin
       "Filtrar Abandonados": { main: [[{ node: "Filtrar No Enviados", type: "main", index: 0 }]] },
       "Leer Emails Enviados": { main: [[{ node: "Filtrar No Enviados", type: "main", index: 1 }]] },
       "Filtrar No Enviados": { main: [[{ node: "Preparar Datos Email", type: "main", index: 0 }]] },
-      "Preparar Datos Email": { main: [[{ node: "Enviar Gmail Recuperacion", type: "main", index: 0 }]] },
-      "Enviar Gmail Recuperacion": { main: [[{ node: "Extraer Email y Fecha", type: "main", index: 0 }]] },
+      "Preparar Datos Email": { main: [[{ node: "Enviar Email Recuperacion", type: "main", index: 0 }]] },
+      "Enviar Email Recuperacion": { main: [[{ node: "Extraer Email y Fecha", type: "main", index: 0 }]] },
       "Extraer Email y Fecha": { main: [[{ node: "Registrar Envio Supabase", type: "main", index: 0 }]] },
     },
     nodes: [
@@ -101,8 +101,8 @@ function buildRecuperador(clientId: string, tnStoreId: string, tnApiToken: strin
       { id: "node-r-4", name: "Leer Emails Enviados", type: "n8n-nodes-base.httpRequest", typeVersion: 4.2, position: [448, 432], parameters: { url: `${NOVA_SUPABASE_URL}/rest/v1/emails_enviados?select=email&client_id=eq.${clientId}`, sendHeaders: true, headerParameters: { parameters: [{ name: "apikey", value: supabaseAnon }, { name: "Authorization", value: `Bearer ${supabaseAnon}` }, { name: "Range", value: "0-9999" }, { name: "Prefer", value: "count=none" }] }, options: { response: { response: { responseFormat: "json" } } } } },
       { id: "node-r-5", name: "Filtrar No Enviados", type: "n8n-nodes-base.merge", typeVersion: 3, position: [928, 304], parameters: { mode: "combine", advanced: true, mergeByFields: { values: [{ field1: "customer.email", field2: "email" }] }, joinMode: "keepNonMatches", outputDataFrom: "input1", options: {} } },
       { id: "node-r-6", name: "Preparar Datos Email", type: "n8n-nodes-base.code", typeVersion: 2, position: [1168, 304], parameters: { jsCode: "return items.map(item => {\n  const d = item.json;\n  const checkoutRaw = d.abandoned_checkout_url || '';\n  const checkoutUrl = checkoutRaw.replace('/v3/proxy/', '/v3/next/');\n  const email = (d.customer?.email || d.contact_email || '').toLowerCase().trim();\n  const nombre = d.contact_name || d.customer?.name || 'cliente';\n  return { json: { ...d, email_destino: email, nombre_contacto: nombre, checkout_url_limpia: checkoutUrl } };\n});" } },
-      { id: "node-r-7", name: "Enviar Gmail Recuperacion", type: "n8n-nodes-base.gmail", typeVersion: 2, position: [1408, 304], credentials: { gmailOAuth2: { id: GMAIL_CREDENTIAL_ID, name: "novaagency" } }, parameters: { sendTo: "={{ $json.email_destino }}", subject: `Completaste tu carrito en ${sanitizeHtml(nombreMarca)}`, message: `=${emailHtml}`, options: { senderName: nombreMarca } } },
-      { id: "node-r-8", name: "Extraer Email y Fecha", type: "n8n-nodes-base.code", typeVersion: 2, position: [1648, 304], parameters: { jsCode: "return $('Preparar Datos Email').all().map(item => ({ json: { email: item.json.email_destino || '', fecha: new Date().toISOString() } }));" } },
+      { id: "node-r-7", name: "Enviar Email Recuperacion", type: "n8n-nodes-base.emailSend", typeVersion: 2.1, position: [1408, 304], credentials: { smtp: { id: SMTP_CREDENTIAL_ID, name: "Nova SMTP" } }, parameters: { fromEmail: `Nova Recover <noreply@novaagency.info>`, toEmail: "={{ $json.email_destino }}", subject: `Completaste tu carrito en ${sanitizeHtml(nombreMarca)}`, emailFormat: "html", html: `=${emailHtml}`, options: {} } },
+      { id: "node-r-8", name: "Extraer Email y Fecha", type: "n8n-nodes-base.code", typeVersion: 2, position: [1648, 304], parameters: { jsCode: "return $('Preparar Datos Email').all().map(item => ({\n  json: { email: item.json.email_destino || '', fecha: new Date().toISOString() }\n}));" } },
       { id: "node-r-9", name: "Registrar Envio Supabase", type: "n8n-nodes-base.httpRequest", typeVersion: 4.2, position: [1888, 304], parameters: { method: "POST", url: `${NOVA_SUPABASE_URL}/rest/v1/emails_enviados?on_conflict=client_id,email`, sendHeaders: true, headerParameters: { parameters: [{ name: "apikey", value: supabaseAnon }, { name: "Authorization", value: `Bearer ${supabaseAnon}` }, { name: "Content-Type", value: "application/json" }, { name: "Prefer", value: "resolution=merge-duplicates,return=minimal" }] }, sendBody: true, specifyBody: "json", jsonBody: `={{ JSON.stringify({ client_id: "${clientId}", email: $json.email, fecha: $json.fecha }) }}`, options: {} } },
     ],
   };

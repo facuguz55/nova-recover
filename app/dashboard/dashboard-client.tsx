@@ -25,7 +25,6 @@ interface Props {
   clientStatus: string;
   onboarding: {
     tn_store_id?: string;
-    gmail_connected?: boolean;
     completed_at?: string;
   } | null;
   tnDisconnectedAt: string | null;
@@ -308,22 +307,6 @@ export default function DashboardClient({ user, clientStatus, onboarding, tnDisc
                   ) : tnDisconnectedAt ? (
                     <span className="text-xs font-medium text-red-400 flex items-center gap-1">
                       <XCircle className="w-3 h-3" /> Desconectada
-                    </span>
-                  ) : (
-                    <span className="text-xs font-medium text-yellow-400 flex items-center gap-1">
-                      <Clock className="w-3 h-3" /> Pendiente
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Mail className="w-4 h-4 text-[#94A3B8]" />
-                    <span className="text-[#94A3B8]">Gmail</span>
-                  </div>
-                  {onboarding?.gmail_connected ? (
-                    <span className="text-xs font-medium text-green-400 flex items-center gap-1">
-                      <CheckCircle className="w-3 h-3" /> Conectado
                     </span>
                   ) : (
                     <span className="text-xs font-medium text-yellow-400 flex items-center gap-1">

@@ -122,15 +122,15 @@ export default async function LandingPage() {
               },
               {
                 step: "02",
-                icon: <Mail className="w-7 h-7" />,
-                title: "Conectás tu Gmail",
-                desc: "Autorizás tu cuenta de Gmail con un clic. Los mails salen desde tu propia dirección — más confianza, más conversión.",
-              },
-              {
-                step: "03",
                 icon: <Zap className="w-7 h-7" />,
                 title: "Activás el servicio",
                 desc: "Con el pago de la suscripción el sistema arranca automáticamente. A partir de ahí trabaja solo.",
+              },
+              {
+                step: "03",
+                icon: <Mail className="w-7 h-7" />,
+                title: "El sistema trabaja solo",
+                desc: "Detecta cada carrito abandonado y manda mails de recuperación en el momento justo, sin que vos hagas nada.",
               },
             ].map((item) => (
               <div
@@ -185,8 +185,8 @@ export default async function LandingPage() {
               },
               {
                 icon: <CheckCircle className="w-5 h-5" />,
-                title: "Mails desde tu Gmail",
-                desc: "Salen desde tu propia dirección. Más personal, más confianza, mejor tasa de apertura.",
+                title: "Mails de recuperación automáticos",
+                desc: "El sistema manda la secuencia de mails en el momento exacto para maximizar la chance de que el cliente vuelva.",
               },
               {
                 icon: <Zap className="w-5 h-5" />,
@@ -238,7 +238,7 @@ export default async function LandingPage() {
               {[
                 "Detección ilimitada de carritos abandonados",
                 "Secuencia de mails automática",
-                "Conexión con tu Gmail",
+                "Sistema de mails automáticos",
                 "Dashboard de métricas en tiempo real",
                 "Soporte por WhatsApp",
                 "Sin límite de mails enviados",
