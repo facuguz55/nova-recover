@@ -71,8 +71,96 @@ create trigger on_auth_user_created
   for each row execute procedure public.handle_new_user();
 
 -- Columnas para tracking de workflows n8n por cliente
-alter table onboarding_data 
+alter table onboarding_data
   add column if not exists n8n_workflow_tracking text,
   add column if not exists n8n_workflow_recuperador text,
   add column if not exists n8n_workflow_conversiones text,
   add column if not exists n8n_client_id text;
+
+-- Columnas para config de email (template y asunto personalizables)
+alter table onboarding_data
+  add column if not exists email_sender_name text,
+  add column if not exists email_template_id text default 'dark-minimal',
+  add column if not exists email_subject text default 'Completaste tu carrito en {store}';
+
+-- =============================================
+-- Tablas operativas de n8n (escritas via anon key)
+-- =============================================
+
+-- Clicks en el link de tracking (WebhookTracking workflow)
+create table if not exists clicks_tracking (
+  id uuid primary key default gen_random_uuid(),
+  client_id text not null,       -- n8n client ID (slug, ej: "tienda-abc123")
+  email text not null,
+  checkout_url text,
+  fecha_click timestamptz default now()
+);
+
+alter table clicks_tracking enable row level security;
+-- n8n escribe via anon key
+create policy "clicks_anon_insert" on clicks_tracking
+  for insert to anon with check (true);
+-- App lee via sesión autenticada
+create policy "clicks_auth_select" on clicks_tracking
+  for select to authenticated using (true);
+
+-- Emails de recuperación enviados (Recuperador workflow)
+create table if not exists emails_enviados (
+  id uuid primary key default gen_random_uuid(),
+  client_id text not null,       -- n8n client ID (slug)
+  email text not null,
+  fecha timestamptz default now(),
+  unique (client_id, email)
+);
+
+alter table emails_enviados enable row level security;
+create policy "emails_anon_insert" on emails_enviados
+  for insert to anon with check (true);
+create policy "emails_anon_select" on emails_enviados
+  for select to anon using (true);
+create policy "emails_auth_select" on emails_enviados
+  for select to authenticated using (true);
+
+-- Conversiones detectadas (VerificarConversiones workflow)
+create table if not exists conversiones (
+  id uuid primary key default gen_random_uuid(),
+  client_id text not null,       -- n8n client ID (slug)
+  email text,
+  nombre_cliente text,
+  id_orden text not null,
+  total_orden text,
+  fecha_orden timestamptz,
+  fecha_click timestamptz,
+  fecha_verificacion timestamptz,
+  utm_campaign text,
+  unique (client_id, id_orden)
+);
+
+alter table conversiones enable row level security;
+create policy "conversiones_anon_insert" on conversiones
+  for insert to anon with check (true);
+create policy "conversiones_auth_select" on conversiones
+  for select to authenticated using (true);
+
+-- Carritos abandonados detectados por el Recuperador workflow
+-- client_id acá es el UUID de Supabase (a diferencia de las otras tablas)
+create table if not exists abandoned_carts (
+  id uuid primary key default gen_random_uuid(),
+  client_id uuid not null,       -- Supabase user UUID
+  customer_email text not null,
+  customer_name text,
+  checkout_url text,
+  abandoned_at timestamptz default now(),
+  status text default 'pending', -- pending | emailed | recovered
+  email_sent_at timestamptz,
+  created_at timestamptz default now(),
+  unique (client_id, customer_email)
+);
+
+alter table abandoned_carts enable row level security;
+create policy "carts_anon_insert" on abandoned_carts
+  for insert to anon with check (true);
+create policy "carts_anon_update" on abandoned_carts
+  for update to anon using (true) with check (true);
+create policy "carts_auth_select" on abandoned_carts
+  for select to authenticated using (auth.uid() = client_id);
