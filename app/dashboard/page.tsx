@@ -19,19 +19,17 @@ export default async function DashboardPage() {
 
   const nClientId = onboarding?.n8n_client_id ?? null;
 
-  const [emailsRes, conversionsRes, cartsRes] = await Promise.all([
+  const [emailsRes, conversionsRes] = await Promise.all([
     nClientId
       ? supabase.from("emails_enviados").select("email, fecha").eq("client_id", nClientId).order("fecha", { ascending: false }).limit(200)
       : Promise.resolve({ data: [] as { email: string; fecha: string }[] }),
     nClientId
       ? supabase.from("conversiones").select("email, nombre_cliente, total_orden, fecha_orden").eq("client_id", nClientId).order("fecha_orden", { ascending: false }).limit(50)
       : Promise.resolve({ data: [] as { email: string; nombre_cliente: string; total_orden: string; fecha_orden: string }[] }),
-    supabase.from("abandoned_carts").select("*").eq("client_id", user.id).order("abandoned_at", { ascending: false }).limit(50),
   ]);
 
   const emailList = emailsRes.data ?? [];
   const conversionList = conversionsRes.data ?? [];
-  const cartList = cartsRes.data ?? [];
 
   return (
     <DashboardClient
@@ -43,9 +41,8 @@ export default async function DashboardPage() {
       metrics={{
         emailsSent: emailList.length,
         conversions: conversionList.length,
-        total: cartList.length > 0 ? cartList.length : emailList.length,
+        total: emailList.length,
       }}
-      recentCarts={cartList.slice(0, 10)}
       recentEmails={emailList.slice(0, 15)}
       recentConversions={conversionList.slice(0, 5)}
     />

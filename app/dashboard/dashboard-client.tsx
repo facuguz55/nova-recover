@@ -23,16 +23,6 @@ interface ConversionRecord {
   fecha_orden: string;
 }
 
-interface AbandonedCart {
-  id: string;
-  customer_email: string | null;
-  customer_name: string | null;
-  checkout_url: string | null;
-  status: string;
-  abandoned_at: string;
-  email_sent_at: string | null;
-}
-
 interface Props {
   user: { email: string; name: string };
   clientStatus: string;
@@ -50,7 +40,6 @@ interface Props {
     conversions: number;
     total: number;
   };
-  recentCarts: AbandonedCart[];
   recentEmails: EmailRecord[];
   recentConversions: ConversionRecord[];
 }
@@ -94,7 +83,7 @@ function formatDate(iso: string) {
   return d.toLocaleDateString("es-AR", { day: "numeric", month: "short" });
 }
 
-export default function DashboardClient({ user, clientStatus, onboarding, tnDisconnectedAt, subscription, metrics, recentCarts, recentEmails, recentConversions }: Props) {
+export default function DashboardClient({ user, clientStatus, onboarding, tnDisconnectedAt, subscription, metrics, recentEmails, recentConversions }: Props) {
   const router = useRouter();
   const [disconnecting, setDisconnecting] = useState(false);
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
@@ -293,26 +282,7 @@ export default function DashboardClient({ user, clientStatus, onboarding, tnDisc
                 </div>
               )}
 
-              {recentCarts.length > 0 ? (
-                <div className="space-y-3">
-                  {recentCarts.map((cart) => (
-                    <div key={cart.id} className="flex items-center justify-between py-2 border-b border-[rgba(255,255,255,0.05)] last:border-0">
-                      <div>
-                        <p className="text-sm font-medium">{cart.customer_name || cart.customer_email || "Cliente"}</p>
-                        <p className="text-xs text-[#94A3B8]">{cart.customer_email ?? "—"} · {formatDate(cart.abandoned_at)}</p>
-                      </div>
-                      <div className="text-right flex flex-col items-end gap-1">
-                        <CartStatusBadge status={cart.status} />
-                        {cart.checkout_url && (
-                          <a href={cart.checkout_url} target="_blank" rel="noopener noreferrer" className="text-xs text-[#7C3AED] hover:underline">
-                            Ver carrito →
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : recentEmails.length > 0 ? (
+              {recentEmails.length > 0 ? (
                 <div className="space-y-3">
                   {recentEmails.map((e, i) => (
                     <div key={i} className="flex items-center justify-between py-2 border-b border-[rgba(255,255,255,0.05)] last:border-0">
