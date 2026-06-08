@@ -21,6 +21,18 @@ interface AbandonedCart {
   email_sent_at: string | null;
 }
 
+interface EmailRecord {
+  email: string;
+  fecha: string;
+}
+
+interface ConversionRecord {
+  email: string;
+  nombre_cliente: string;
+  total_orden: string;
+  fecha_orden: string;
+}
+
 interface Props {
   user: { email: string; name: string };
   clientStatus: string;
@@ -39,6 +51,8 @@ interface Props {
     total: number;
   };
   recentCarts: AbandonedCart[];
+  recentEmails: EmailRecord[];
+  recentConversions: ConversionRecord[];
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -80,7 +94,7 @@ function formatDate(iso: string) {
   return d.toLocaleDateString("es-AR", { day: "numeric", month: "short" });
 }
 
-export default function DashboardClient({ user, clientStatus, onboarding, tnDisconnectedAt, subscription, metrics, recentCarts }: Props) {
+export default function DashboardClient({ user, clientStatus, onboarding, tnDisconnectedAt, subscription, metrics, recentCarts, recentEmails, recentConversions }: Props) {
   const router = useRouter();
   const [disconnecting, setDisconnecting] = useState(false);
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
@@ -252,33 +266,46 @@ export default function DashboardClient({ user, clientStatus, onboarding, tnDisc
           </div>
 
           <div className="grid lg:grid-cols-3 gap-6">
-            {/* Tabla de carritos reales */}
+            {/* Actividad reciente */}
             <div className="lg:col-span-2 bg-[#111118] border border-[rgba(124,58,237,0.2)] rounded-2xl p-6">
-              <h2 className="font-bold mb-5">Carritos abandonados</h2>
+              <h2 className="font-bold mb-5">Actividad reciente</h2>
+
+              {/* Conversiones (si las hay) */}
+              {recentConversions.length > 0 && (
+                <div className="mb-5">
+                  <p className="text-xs font-bold text-[#94A3B8] uppercase tracking-widest mb-3">Recuperados</p>
+                  <div className="space-y-2">
+                    {recentConversions.map((c, i) => (
+                      <div key={i} className="flex items-center justify-between py-2 border-b border-[rgba(34,197,94,0.1)] last:border-0">
+                        <div>
+                          <p className="text-sm font-medium">{c.nombre_cliente || c.email}</p>
+                          <p className="text-xs text-[#94A3B8]">{c.email} · {formatDate(c.fecha_orden)}</p>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-xs font-bold text-green-400">
+                            ${Number(c.total_orden || 0).toLocaleString("es-AR")}
+                          </span>
+                          <p className="text-[10px] text-green-400 opacity-70">Recuperado</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Carritos con tracking nuevo */}
               {recentCarts.length > 0 ? (
                 <div className="space-y-3">
                   {recentCarts.map((cart) => (
-                    <div
-                      key={cart.id}
-                      className="flex items-center justify-between py-2 border-b border-[rgba(255,255,255,0.05)] last:border-0"
-                    >
+                    <div key={cart.id} className="flex items-center justify-between py-2 border-b border-[rgba(255,255,255,0.05)] last:border-0">
                       <div>
-                        <p className="text-sm font-medium">
-                          {cart.customer_name || cart.customer_email || "Cliente desconocido"}
-                        </p>
-                        <p className="text-xs text-[#94A3B8]">
-                          {cart.customer_email ?? "—"} · {formatDate(cart.abandoned_at)}
-                        </p>
+                        <p className="text-sm font-medium">{cart.customer_name || cart.customer_email || "Cliente"}</p>
+                        <p className="text-xs text-[#94A3B8]">{cart.customer_email ?? "—"} · {formatDate(cart.abandoned_at)}</p>
                       </div>
                       <div className="text-right flex flex-col items-end gap-1">
                         <CartStatusBadge status={cart.status} />
                         {cart.checkout_url && (
-                          <a
-                            href={cart.checkout_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-[#7C3AED] hover:underline"
-                          >
+                          <a href={cart.checkout_url} target="_blank" rel="noopener noreferrer" className="text-xs text-[#7C3AED] hover:underline">
                             Ver carrito →
                           </a>
                         )}
@@ -286,14 +313,25 @@ export default function DashboardClient({ user, clientStatus, onboarding, tnDisc
                     </div>
                   ))}
                 </div>
+              ) : recentEmails.length > 0 ? (
+                /* Fallback: emails enviados (hasta que abandoned_carts se popule) */
+                <div className="space-y-3">
+                  {recentEmails.map((e, i) => (
+                    <div key={i} className="flex items-center justify-between py-2 border-b border-[rgba(255,255,255,0.05)] last:border-0">
+                      <div>
+                        <p className="text-sm font-medium">{e.email}</p>
+                        <p className="text-xs text-[#94A3B8]">{formatDate(e.fecha)}</p>
+                      </div>
+                      <CartStatusBadge status="emailed" />
+                    </div>
+                  ))}
+                </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <Inbox className="w-10 h-10 text-[rgba(124,58,237,0.3)] mb-3" />
-                  <p className="text-[#94A3B8] text-sm">
-                    Todavía no hay carritos detectados.
-                  </p>
+                  <p className="text-[#94A3B8] text-sm">Todavía no hay carritos detectados.</p>
                   <p className="text-xs text-[#64748B] mt-1">
-                    Aparecerán acá cuando TiendaNube notifique carritos abandonados.
+                    El workflow revisa TiendaNube cada 2 horas automáticamente.
                   </p>
                 </div>
               )}

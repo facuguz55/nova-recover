@@ -35,7 +35,7 @@ function buildWebhookTracking(clientId: string, supabaseAnon: string) {
   };
 }
 
-function buildRecuperador(clientId: string, tnStoreId: string, tnApiToken: string, nombreMarca: string, senderName: string, supabaseAnon: string, templateId: string, emailSubjectTpl: string) {
+function buildRecuperador(clientId: string, userId: string, tnStoreId: string, tnApiToken: string, nombreMarca: string, senderName: string, supabaseAnon: string, templateId: string, emailSubjectTpl: string) {
   const checkoutLink = `${WEBHOOK_BASE}/webhook/track-carrito-${clientId}?email={{ $json.email_destino }}&checkout={{ $json.checkout_url_limpia }}`;
   const tpl = getTemplate(templateId);
   const emailHtml = tpl.build(senderName, checkoutLink);
@@ -48,12 +48,15 @@ function buildRecuperador(clientId: string, tnStoreId: string, tnApiToken: strin
     connections: {
       "Trigger cada 2 horas": { main: [[{ node: "Consultar Carritos TiendaNube", type: "main", index: 0 }, { node: "Leer Emails Enviados", type: "main", index: 0 }]] },
       "Consultar Carritos TiendaNube": { main: [[{ node: "Filtrar Abandonados", type: "main", index: 0 }]] },
-      "Filtrar Abandonados": { main: [[{ node: "Filtrar No Enviados", type: "main", index: 0 }]] },
+      // Fork: guarda todos los carritos detectados Y continúa el flujo de envío
+      "Filtrar Abandonados": { main: [[{ node: "Guardar Datos Abandono", type: "main", index: 0 }, { node: "Filtrar No Enviados", type: "main", index: 0 }]] },
+      "Guardar Datos Abandono": { main: [[{ node: "Upsert Carritos Supabase", type: "main", index: 0 }]] },
       "Leer Emails Enviados": { main: [[{ node: "Filtrar No Enviados", type: "main", index: 1 }]] },
       "Filtrar No Enviados": { main: [[{ node: "Preparar Datos Email", type: "main", index: 0 }]] },
       "Preparar Datos Email": { main: [[{ node: "Enviar Gmail Recuperacion", type: "main", index: 0 }]] },
       "Enviar Gmail Recuperacion": { main: [[{ node: "Extraer Email y Fecha", type: "main", index: 0 }]] },
       "Extraer Email y Fecha": { main: [[{ node: "Registrar Envio Supabase", type: "main", index: 0 }]] },
+      "Registrar Envio Supabase": { main: [[{ node: "Actualizar Carritos Email", type: "main", index: 0 }]] },
     },
     nodes: [
       { id: "node-r-1", name: "Trigger cada 2 horas", type: "n8n-nodes-base.scheduleTrigger", typeVersion: 1.3, position: [208, 304], parameters: { rule: { interval: [{ field: "hours", hoursInterval: 2 }] } } },
@@ -65,6 +68,10 @@ function buildRecuperador(clientId: string, tnStoreId: string, tnApiToken: strin
       { id: "node-r-7", name: "Enviar Gmail Recuperacion", type: "n8n-nodes-base.gmail", typeVersion: 2, position: [1408, 304], credentials: { gmailOAuth2: { id: GMAIL_CREDENTIAL_ID, name: "novaagency" } }, parameters: { sendTo: "={{ $json.email_destino }}", subject: emailSubject, message: `=${emailHtml}`, options: { senderName: senderName } } },
       { id: "node-r-8", name: "Extraer Email y Fecha", type: "n8n-nodes-base.code", typeVersion: 2, position: [1648, 304], parameters: { jsCode: "return $('Preparar Datos Email').all().map(item => ({\n  json: { email: item.json.email_destino || '', fecha: new Date().toISOString() }\n}));" } },
       { id: "node-r-9", name: "Registrar Envio Supabase", type: "n8n-nodes-base.httpRequest", typeVersion: 4.2, position: [1888, 304], parameters: { method: "POST", url: `${NOVA_SUPABASE_URL}/rest/v1/emails_enviados?on_conflict=client_id,email`, sendHeaders: true, headerParameters: { parameters: [{ name: "apikey", value: supabaseAnon }, { name: "Authorization", value: `Bearer ${supabaseAnon}` }, { name: "Content-Type", value: "application/json" }, { name: "Prefer", value: "resolution=merge-duplicates,return=minimal" }] }, sendBody: true, specifyBody: "json", jsonBody: `={{ JSON.stringify({ client_id: "${clientId}", email: $json.email, fecha: $json.fecha }) }}`, options: {} } },
+      // Nuevos nodos para poblar abandoned_carts
+      { id: "node-r-10", name: "Guardar Datos Abandono", type: "n8n-nodes-base.code", typeVersion: 2, position: [688, 48], parameters: { jsCode: `return $input.all().filter(i => {\n  const e = (i.json.customer?.email || i.json.contact_email || '').trim();\n  return e.length > 0;\n}).map(i => ({ json: {\n  client_id: "${userId}",\n  customer_email: (i.json.customer?.email || i.json.contact_email || '').toLowerCase().trim(),\n  customer_name: i.json.contact_name || i.json.customer?.name || null,\n  checkout_url: i.json.abandoned_checkout_url || null,\n  abandoned_at: i.json.created_at || new Date().toISOString(),\n  status: 'pending'\n} }));` } },
+      { id: "node-r-11", name: "Upsert Carritos Supabase", type: "n8n-nodes-base.httpRequest", typeVersion: 4.2, position: [928, 48], parameters: { method: "POST", url: `${NOVA_SUPABASE_URL}/rest/v1/abandoned_carts?on_conflict=client_id,customer_email`, sendHeaders: true, headerParameters: { parameters: [{ name: "apikey", value: supabaseAnon }, { name: "Authorization", value: `Bearer ${supabaseAnon}` }, { name: "Content-Type", value: "application/json" }, { name: "Prefer", value: "resolution=ignore-duplicates,return=minimal" }] }, sendBody: true, specifyBody: "json", jsonBody: `={{ JSON.stringify({ client_id: "${userId}", customer_email: $json.customer_email, customer_name: $json.customer_name, checkout_url: $json.checkout_url, abandoned_at: $json.abandoned_at, status: 'pending' }) }}`, options: {} } },
+      { id: "node-r-12", name: "Actualizar Carritos Email", type: "n8n-nodes-base.httpRequest", typeVersion: 4.2, position: [2128, 304], parameters: { method: "PATCH", url: `={{ "${NOVA_SUPABASE_URL}/rest/v1/abandoned_carts?client_id=eq.${userId}&customer_email=eq." + encodeURIComponent($json.email) }}`, sendHeaders: true, headerParameters: { parameters: [{ name: "apikey", value: supabaseAnon }, { name: "Authorization", value: `Bearer ${supabaseAnon}` }, { name: "Content-Type", value: "application/json" }, { name: "Prefer", value: "return=minimal" }] }, sendBody: true, specifyBody: "json", jsonBody: "={{ JSON.stringify({ status: 'emailed', email_sent_at: $json.fecha }) }}", options: {} } },
     ],
   };
 }
@@ -130,7 +137,7 @@ export async function runProvision(userId: string, options?: { force?: boolean }
 
   const [w1, w2, w3] = await Promise.all([
     n8nRequest("/workflows", "POST", buildWebhookTracking(clientId, supabaseAnon)),
-    n8nRequest("/workflows", "POST", buildRecuperador(clientId, tnStoreId, tnApiToken, nombreMarca, senderName, supabaseAnon, templateId, emailSubjectTpl)),
+    n8nRequest("/workflows", "POST", buildRecuperador(clientId, userId, tnStoreId, tnApiToken, nombreMarca, senderName, supabaseAnon, templateId, emailSubjectTpl)),
     n8nRequest("/workflows", "POST", buildVerificarConversiones(clientId, tnStoreId, tnApiToken, supabaseAnon)),
   ]);
 

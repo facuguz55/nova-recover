@@ -11,22 +11,34 @@ export default async function DashboardPage() {
     { data: client },
     { data: onboarding },
     { data: subscription },
-    { data: carts },
   ] = await Promise.all([
     supabase.from("clients").select("*").eq("id", user.id).single(),
     supabase.from("onboarding_data").select("*").eq("client_id", user.id).single(),
     supabase.from("subscriptions").select("*").eq("client_id", user.id).single(),
-    supabase
-      .from("abandoned_carts")
-      .select("*")
-      .eq("client_id", user.id)
-      .order("abandoned_at", { ascending: false })
-      .limit(50),
   ]);
 
-  const cartList = carts ?? [];
-  const emailsSent = cartList.filter((c) => c.email_sent_at).length;
-  const conversions = cartList.filter((c) => c.status === "recovered").length;
+  // n8n_client_id es el slug que usan los workflows (distinto al UUID de Supabase)
+  const nClientId = onboarding?.n8n_client_id ?? null;
+
+  const [emailsRes, conversionsRes, cartsRes] = await Promise.all([
+    nClientId
+      ? supabase.from("emails_enviados").select("email, fecha").eq("client_id", nClientId).order("fecha", { ascending: false }).limit(200)
+      : Promise.resolve({ data: [] as { email: string; fecha: string }[] }),
+    nClientId
+      ? supabase.from("conversiones").select("email, nombre_cliente, total_orden, fecha_orden").eq("client_id", nClientId).order("fecha_orden", { ascending: false }).limit(50)
+      : Promise.resolve({ data: [] as { email: string; nombre_cliente: string; total_orden: string; fecha_orden: string }[] }),
+    supabase.from("abandoned_carts").select("*").eq("client_id", user.id).order("abandoned_at", { ascending: false }).limit(50),
+  ]);
+
+  const emailList = emailsRes.data ?? [];
+  const conversionList = conversionsRes.data ?? [];
+  const cartList = cartsRes.data ?? [];
+
+  // Métricas reales: emails enviados y conversiones confirmadas
+  const emailsSent = emailList.length;
+  const conversions = conversionList.length;
+  // Total detectados: sumar abandoned_carts (nuevo tracking) + emails_enviados (retrocompatible)
+  const totalDetected = cartList.length > 0 ? cartList.length : emailsSent;
 
   return (
     <DashboardClient
@@ -35,8 +47,10 @@ export default async function DashboardPage() {
       onboarding={onboarding}
       tnDisconnectedAt={onboarding?.tn_disconnected_at ?? null}
       subscription={subscription}
-      metrics={{ emailsSent, conversions, total: cartList.length }}
+      metrics={{ emailsSent, conversions, total: totalDetected }}
       recentCarts={cartList.slice(0, 10)}
+      recentEmails={emailList.slice(0, 10)}
+      recentConversions={conversionList.slice(0, 5)}
     />
   );
 }
