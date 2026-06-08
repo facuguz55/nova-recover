@@ -17,7 +17,6 @@ export default async function DashboardPage() {
     supabase.from("subscriptions").select("*").eq("client_id", user.id).single(),
   ]);
 
-  // n8n_client_id es el slug que usan los workflows (distinto al UUID de Supabase)
   const nClientId = onboarding?.n8n_client_id ?? null;
 
   const [emailsRes, conversionsRes, cartsRes] = await Promise.all([
@@ -34,12 +33,6 @@ export default async function DashboardPage() {
   const conversionList = conversionsRes.data ?? [];
   const cartList = cartsRes.data ?? [];
 
-  // Métricas reales: emails enviados y conversiones confirmadas
-  const emailsSent = emailList.length;
-  const conversions = conversionList.length;
-  // Total detectados: sumar abandoned_carts (nuevo tracking) + emails_enviados (retrocompatible)
-  const totalDetected = cartList.length > 0 ? cartList.length : emailsSent;
-
   return (
     <DashboardClient
       user={{ email: user.email ?? "", name: client?.name ?? user.email ?? "" }}
@@ -47,9 +40,13 @@ export default async function DashboardPage() {
       onboarding={onboarding}
       tnDisconnectedAt={onboarding?.tn_disconnected_at ?? null}
       subscription={subscription}
-      metrics={{ emailsSent, conversions, total: totalDetected }}
+      metrics={{
+        emailsSent: emailList.length,
+        conversions: conversionList.length,
+        total: cartList.length > 0 ? cartList.length : emailList.length,
+      }}
       recentCarts={cartList.slice(0, 10)}
-      recentEmails={emailList.slice(0, 10)}
+      recentEmails={emailList.slice(0, 15)}
       recentConversions={conversionList.slice(0, 5)}
     />
   );

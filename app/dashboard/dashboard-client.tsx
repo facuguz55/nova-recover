@@ -11,16 +11,6 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 
-interface AbandonedCart {
-  id: string;
-  customer_email: string | null;
-  customer_name: string | null;
-  checkout_url: string | null;
-  status: string;
-  abandoned_at: string;
-  email_sent_at: string | null;
-}
-
 interface EmailRecord {
   email: string;
   fecha: string;
@@ -31,6 +21,16 @@ interface ConversionRecord {
   nombre_cliente: string;
   total_orden: string;
   fecha_orden: string;
+}
+
+interface AbandonedCart {
+  id: string;
+  customer_email: string | null;
+  customer_name: string | null;
+  checkout_url: string | null;
+  status: string;
+  abandoned_at: string;
+  email_sent_at: string | null;
 }
 
 interface Props {
@@ -293,7 +293,6 @@ export default function DashboardClient({ user, clientStatus, onboarding, tnDisc
                 </div>
               )}
 
-              {/* Carritos con tracking nuevo */}
               {recentCarts.length > 0 ? (
                 <div className="space-y-3">
                   {recentCarts.map((cart) => (
@@ -314,7 +313,6 @@ export default function DashboardClient({ user, clientStatus, onboarding, tnDisc
                   ))}
                 </div>
               ) : recentEmails.length > 0 ? (
-                /* Fallback: emails enviados (hasta que abandoned_carts se popule) */
                 <div className="space-y-3">
                   {recentEmails.map((e, i) => (
                     <div key={i} className="flex items-center justify-between py-2 border-b border-[rgba(255,255,255,0.05)] last:border-0">
