@@ -10,10 +10,10 @@ export default async function LandingPage() {
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-[#F1F5F9]">
       {/* Navbar */}
-      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-[rgba(124,58,237,0.15)] bg-[rgba(10,10,15,0.85)] backdrop-blur-md">
+      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-[rgba(139,92,246,0.15)] bg-[rgba(10,10,15,0.85)] backdrop-blur-md">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#7C3AED] to-[#2563EB] flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#8b5cf6] to-[#c026d3] flex items-center justify-center">
               <Zap className="w-4 h-4 text-white" />
             </div>
             <span className="font-bold text-lg tracking-tight">Nova Recover</span>
@@ -22,7 +22,7 @@ export default async function LandingPage() {
             {isLoggedIn ? (
               <Link
                 href="/dashboard"
-                className="flex items-center gap-1.5 text-sm bg-[#0d0d14] hover:bg-[#111118] text-[#A78BFA] px-4 py-2 rounded-lg font-medium transition-all border border-[#7C3AED] shadow-[0_0_12px_rgba(124,58,237,0.35)] hover:shadow-[0_0_20px_rgba(124,58,237,0.55)]"
+                className="flex items-center gap-1.5 text-sm bg-[#0d0d14] hover:bg-[#111118] text-[#A78BFA] px-4 py-2 rounded-lg font-medium transition-all border border-[#8b5cf6] shadow-[0_0_12px_rgba(139,92,246,0.35)] hover:shadow-[0_0_20px_rgba(139,92,246,0.55)]"
               >
                 <LayoutDashboard className="w-3.5 h-3.5" />
                 Ir al dashboard
@@ -34,7 +34,7 @@ export default async function LandingPage() {
                 </Link>
                 <Link
                   href="/register"
-                  className="text-sm bg-[#7C3AED] hover:bg-[#8B5CF6] text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                  className="text-sm bg-[#8b5cf6] hover:bg-[#a78bfa] text-white px-4 py-2 rounded-lg font-medium transition-colors"
                 >
                   Empezar gratis
                 </Link>
@@ -46,10 +46,10 @@ export default async function LandingPage() {
 
       {/* Hero */}
       <section className="pt-32 pb-24 px-6 relative overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-[radial-gradient(ellipse_at_center,rgba(124,58,237,0.15)_0%,transparent_70%)] pointer-events-none" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-[radial-gradient(ellipse_at_center,rgba(139,92,246,0.15)_0%,transparent_70%)] pointer-events-none" />
 
         <div className="max-w-4xl mx-auto text-center relative">
-          <div className="inline-flex items-center gap-2 bg-[rgba(124,58,237,0.12)] border border-[rgba(124,58,237,0.3)] rounded-full px-4 py-2 text-sm font-medium text-[#8B5CF6] mb-8">
+          <div className="inline-flex items-center gap-2 bg-[rgba(139,92,246,0.12)] border border-[rgba(139,92,246,0.3)] rounded-full px-4 py-2 text-sm font-medium text-[#a78bfa] mb-8">
             <Bell className="w-3.5 h-3.5" />
             Sistema automático de recuperación de carritos
           </div>
@@ -70,14 +70,14 @@ export default async function LandingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
               href="/register"
-              className="flex items-center gap-2 bg-gradient-to-r from-[#7C3AED] to-[#2563EB] hover:opacity-90 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all hover:scale-105 shadow-lg shadow-[rgba(124,58,237,0.3)]"
+              className="flex items-center gap-2 bg-gradient-to-r from-[#8b5cf6] to-[#c026d3] hover:opacity-90 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all hover:scale-105 shadow-lg shadow-[rgba(139,92,246,0.3)]"
             >
               Empezar ahora
               <ArrowRight className="w-5 h-5" />
             </Link>
             <Link
               href="/dashboard"
-              className="flex items-center gap-2 bg-[#0d0d14] hover:bg-[#111118] text-[#A78BFA] px-8 py-4 rounded-xl font-semibold text-lg transition-all hover:scale-105 border border-[#7C3AED] shadow-[0_0_20px_rgba(124,58,237,0.45)] hover:shadow-[0_0_32px_rgba(124,58,237,0.65)]"
+              className="flex items-center gap-2 bg-[#0d0d14] hover:bg-[#111118] text-[#A78BFA] px-8 py-4 rounded-xl font-semibold text-lg transition-all hover:scale-105 border border-[#8b5cf6] shadow-[0_0_20px_rgba(139,92,246,0.45)] hover:shadow-[0_0_32px_rgba(139,92,246,0.65)]"
             >
               <LayoutDashboard className="w-5 h-5" />
               Ir al dashboard
@@ -103,7 +103,7 @@ export default async function LandingPage() {
       <section id="como-funciona" className="py-24 px-6 bg-[#0d0d14]">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 bg-[rgba(124,58,237,0.12)] border border-[rgba(124,58,237,0.3)] rounded-full px-4 py-2 text-sm font-medium text-[#8B5CF6] mb-6">
+            <div className="inline-flex items-center gap-2 bg-[rgba(139,92,246,0.12)] border border-[rgba(139,92,246,0.3)] rounded-full px-4 py-2 text-sm font-medium text-[#a78bfa] mb-6">
               ¿Cómo funciona?
             </div>
             <h2 className="text-4xl md:text-5xl font-black mb-4">En 3 pasos y listo</h2>
@@ -135,12 +135,12 @@ export default async function LandingPage() {
             ].map((item) => (
               <div
                 key={item.step}
-                className="relative bg-[#111118] border border-[rgba(124,58,237,0.2)] rounded-2xl p-7 hover:border-[rgba(124,58,237,0.4)] transition-all group"
+                className="relative bg-[#111118] border border-[rgba(139,92,246,0.2)] rounded-2xl p-7 hover:border-[rgba(139,92,246,0.4)] transition-all group"
               >
-                <div className="absolute top-6 right-6 text-5xl font-black text-[rgba(124,58,237,0.08)] group-hover:text-[rgba(124,58,237,0.12)] transition-colors select-none">
+                <div className="absolute top-6 right-6 text-5xl font-black text-[rgba(139,92,246,0.08)] group-hover:text-[rgba(139,92,246,0.12)] transition-colors select-none">
                   {item.step}
                 </div>
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#7C3AED] to-[#2563EB] flex items-center justify-center text-white mb-5">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#8b5cf6] to-[#c026d3] flex items-center justify-center text-white mb-5">
                   {item.icon}
                 </div>
                 <h3 className="text-xl font-bold mb-3">{item.title}</h3>
@@ -196,9 +196,9 @@ export default async function LandingPage() {
             ].map((feat) => (
               <div
                 key={feat.title}
-                className="flex gap-4 bg-[#111118] border border-[rgba(124,58,237,0.15)] rounded-xl p-5 hover:border-[rgba(124,58,237,0.35)] transition-all"
+                className="flex gap-4 bg-[#111118] border border-[rgba(139,92,246,0.15)] rounded-xl p-5 hover:border-[rgba(139,92,246,0.35)] transition-all"
               >
-                <div className="w-10 h-10 rounded-lg bg-[rgba(124,58,237,0.15)] flex items-center justify-center text-[#8B5CF6] shrink-0">
+                <div className="w-10 h-10 rounded-lg bg-[rgba(139,92,246,0.15)] flex items-center justify-center text-[#a78bfa] shrink-0">
                   {feat.icon}
                 </div>
                 <div>
@@ -214,16 +214,16 @@ export default async function LandingPage() {
       {/* Pricing */}
       <section id="pricing" className="py-24 px-6 bg-[#0d0d14]">
         <div className="max-w-lg mx-auto text-center">
-          <div className="inline-flex items-center gap-2 bg-[rgba(124,58,237,0.12)] border border-[rgba(124,58,237,0.3)] rounded-full px-4 py-2 text-sm font-medium text-[#8B5CF6] mb-8">
+          <div className="inline-flex items-center gap-2 bg-[rgba(139,92,246,0.12)] border border-[rgba(139,92,246,0.3)] rounded-full px-4 py-2 text-sm font-medium text-[#a78bfa] mb-8">
             Precio
           </div>
           <h2 className="text-4xl font-black mb-4">Un solo plan, todo incluido</h2>
           <p className="text-[#94A3B8] mb-12">Sin costos ocultos. Sin límites de envíos.</p>
 
-          <div className="bg-[#111118] border border-[rgba(124,58,237,0.4)] rounded-3xl p-8 relative overflow-hidden">
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#7C3AED] via-[#2563EB] to-[#06B6D4]" />
+          <div className="bg-[#111118] border border-[rgba(139,92,246,0.4)] rounded-3xl p-8 relative overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#8b5cf6] via-[#c026d3] to-[#06B6D4]" />
 
-            <div className="inline-flex items-center gap-2 bg-[rgba(124,58,237,0.15)] text-[#8B5CF6] rounded-full px-3 py-1 text-xs font-semibold mb-6">
+            <div className="inline-flex items-center gap-2 bg-[rgba(139,92,246,0.15)] text-[#a78bfa] rounded-full px-3 py-1 text-xs font-semibold mb-6">
               MÁS POPULAR
             </div>
 
@@ -244,7 +244,7 @@ export default async function LandingPage() {
                 "Sin límite de mails enviados",
               ].map((feature) => (
                 <li key={feature} className="flex items-center gap-3 text-sm">
-                  <CheckCircle className="w-4 h-4 text-[#7C3AED] shrink-0" />
+                  <CheckCircle className="w-4 h-4 text-[#8b5cf6] shrink-0" />
                   <span>{feature}</span>
                 </li>
               ))}
@@ -252,14 +252,14 @@ export default async function LandingPage() {
 
             <Link
               href="/register"
-              className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-[#7C3AED] to-[#2563EB] hover:opacity-90 text-white py-4 rounded-xl font-semibold text-lg transition-all hover:scale-[1.02] shadow-lg shadow-[rgba(124,58,237,0.3)]"
+              className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-[#8b5cf6] to-[#c026d3] hover:opacity-90 text-white py-4 rounded-xl font-semibold text-lg transition-all hover:scale-[1.02] shadow-lg shadow-[rgba(139,92,246,0.3)]"
             >
               Empezar ahora
               <ArrowRight className="w-5 h-5" />
             </Link>
             <Link
               href="/dashboard"
-              className="flex items-center justify-center gap-2 w-full bg-[#0d0d14] hover:bg-[#111118] text-[#A78BFA] py-4 rounded-xl font-semibold text-lg transition-all hover:scale-[1.02] border border-[#7C3AED] shadow-[0_0_20px_rgba(124,58,237,0.45)] hover:shadow-[0_0_32px_rgba(124,58,237,0.65)]"
+              className="flex items-center justify-center gap-2 w-full bg-[#0d0d14] hover:bg-[#111118] text-[#A78BFA] py-4 rounded-xl font-semibold text-lg transition-all hover:scale-[1.02] border border-[#8b5cf6] shadow-[0_0_20px_rgba(139,92,246,0.45)] hover:shadow-[0_0_32px_rgba(139,92,246,0.65)]"
             >
               <LayoutDashboard className="w-5 h-5" />
               Ir al dashboard
@@ -282,14 +282,14 @@ export default async function LandingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
               href="/register"
-              className="inline-flex items-center gap-2 bg-gradient-to-r from-[#7C3AED] to-[#2563EB] hover:opacity-90 text-white px-10 py-5 rounded-xl font-bold text-lg transition-all hover:scale-105 shadow-xl shadow-[rgba(124,58,237,0.3)]"
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-[#8b5cf6] to-[#c026d3] hover:opacity-90 text-white px-10 py-5 rounded-xl font-bold text-lg transition-all hover:scale-105 shadow-xl shadow-[rgba(139,92,246,0.3)]"
             >
               Empezar ahora — USD 59/mes
               <ArrowRight className="w-5 h-5" />
             </Link>
             <Link
               href="/dashboard"
-              className="inline-flex items-center gap-2 bg-[#0d0d14] hover:bg-[#111118] text-[#A78BFA] px-10 py-5 rounded-xl font-bold text-lg transition-all hover:scale-105 border border-[#7C3AED] shadow-[0_0_24px_rgba(124,58,237,0.5)] hover:shadow-[0_0_40px_rgba(124,58,237,0.7)]"
+              className="inline-flex items-center gap-2 bg-[#0d0d14] hover:bg-[#111118] text-[#A78BFA] px-10 py-5 rounded-xl font-bold text-lg transition-all hover:scale-105 border border-[#8b5cf6] shadow-[0_0_24px_rgba(139,92,246,0.5)] hover:shadow-[0_0_40px_rgba(139,92,246,0.7)]"
             >
               <LayoutDashboard className="w-5 h-5" />
               Ir al dashboard
@@ -299,10 +299,10 @@ export default async function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-[rgba(124,58,237,0.15)] py-8 px-6">
+      <footer className="border-t border-[rgba(139,92,246,0.15)] py-8 px-6">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-[#94A3B8]">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md bg-gradient-to-br from-[#7C3AED] to-[#2563EB] flex items-center justify-center">
+            <div className="w-6 h-6 rounded-md bg-gradient-to-br from-[#8b5cf6] to-[#c026d3] flex items-center justify-center">
               <Zap className="w-3 h-3 text-white" />
             </div>
             <span className="font-semibold text-white">Nova Recover</span>

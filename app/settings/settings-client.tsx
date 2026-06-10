@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
+import AnimatedBackground from "@/components/animated-background";
 import { EMAIL_TEMPLATES } from "@/lib/email-templates";
 
 interface Props {
@@ -29,8 +30,8 @@ interface Props {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="bg-[#111118] border border-[rgba(124,58,237,0.2)] rounded-2xl p-6">
-      <h2 className="text-xs font-bold text-[#94A3B8] uppercase tracking-widest mb-5">{title}</h2>
+    <div className="metric-card anim-up bg-[#111118] border border-[rgba(139,92,246,0.2)] rounded-2xl p-6">
+      <h2 className="text-xs font-bold neon-text uppercase tracking-widest mb-5">{title}</h2>
       {children}
     </div>
   );
@@ -155,8 +156,9 @@ export default function SettingsClient({ user, client, onboarding, subscription 
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-[#F1F5F9]">
+      <AnimatedBackground />
       {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-[rgba(124,58,237,0.15)] bg-[rgba(10,10,15,0.95)] backdrop-blur-md h-16 flex items-center px-6">
+      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-[rgba(139,92,246,0.15)] bg-[rgba(10,10,15,0.95)] backdrop-blur-md h-16 flex items-center px-6">
         <div className="max-w-3xl mx-auto w-full flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link href="/dashboard" className="flex items-center gap-1.5 text-sm text-[#94A3B8] hover:text-white transition-colors">
@@ -165,7 +167,7 @@ export default function SettingsClient({ user, client, onboarding, subscription 
             </Link>
             <div className="w-px h-4 bg-[rgba(255,255,255,0.08)]" />
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#7C3AED] to-[#2563EB] flex items-center justify-center">
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#8b5cf6] to-[#c026d3] flex items-center justify-center">
                 <Zap className="w-3.5 h-3.5 text-white" />
               </div>
               <span className="font-bold tracking-tight text-sm">Nova Recover</span>
@@ -178,7 +180,7 @@ export default function SettingsClient({ user, client, onboarding, subscription 
         </div>
       </nav>
 
-      <main className="pt-24 pb-16 px-6">
+      <main className="relative z-10 pt-24 pb-16 px-6">
         <div className="max-w-3xl mx-auto space-y-6">
 
           <div className="mb-8">
@@ -197,7 +199,7 @@ export default function SettingsClient({ user, client, onboarding, subscription 
                     value={name}
                     maxLength={100}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full bg-[#0a0a0f] border border-[rgba(124,58,237,0.25)] focus:border-[#7C3AED] rounded-xl pl-10 pr-4 py-3 text-sm text-[#F1F5F9] outline-none transition-colors"
+                    className="w-full bg-[#0a0a0f] border border-[rgba(139,92,246,0.25)] focus:border-[#8b5cf6] rounded-xl pl-10 pr-4 py-3 text-sm text-[#F1F5F9] outline-none transition-colors"
                   />
                 </div>
               </Field>
@@ -210,7 +212,7 @@ export default function SettingsClient({ user, client, onboarding, subscription 
                     value={storeName}
                     maxLength={60}
                     onChange={(e) => setStoreName(e.target.value)}
-                    className="w-full bg-[#0a0a0f] border border-[rgba(124,58,237,0.25)] focus:border-[#7C3AED] rounded-xl pl-10 pr-4 py-3 text-sm text-[#F1F5F9] outline-none transition-colors"
+                    className="w-full bg-[#0a0a0f] border border-[rgba(139,92,246,0.25)] focus:border-[#8b5cf6] rounded-xl pl-10 pr-4 py-3 text-sm text-[#F1F5F9] outline-none transition-colors"
                   />
                 </div>
               </Field>
@@ -227,7 +229,7 @@ export default function SettingsClient({ user, client, onboarding, subscription 
               <button
                 onClick={saveProfile}
                 disabled={savingProfile}
-                className="flex items-center gap-2 bg-gradient-to-r from-[#7C3AED] to-[#2563EB] hover:opacity-90 disabled:opacity-60 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-all"
+                className="flex items-center gap-2 bg-gradient-to-r from-[#8b5cf6] to-[#c026d3] hover:opacity-90 disabled:opacity-60 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-all"
               >
                 {savingProfile ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                 {savingProfile ? "Guardando..." : "Guardar cambios"}
@@ -267,12 +269,12 @@ export default function SettingsClient({ user, client, onboarding, subscription 
               )}
 
               {(subStatus === "active" || subStatus === "trial") && (
-                <div className="bg-[#0a0a0f] border border-[rgba(124,58,237,0.15)] rounded-xl p-4 space-y-2">
+                <div className="bg-[#0a0a0f] border border-[rgba(139,92,246,0.15)] rounded-xl p-4 space-y-2">
                   <p className="text-xs font-bold text-[#94A3B8] uppercase tracking-widest">Tu plan incluye</p>
                   <ul className="space-y-1.5 mt-2">
                     {["Detección ilimitada de carritos", "Mails automáticos 24/7", "Dashboard de métricas en tiempo real", "Cancelás cuando querés"].map((f) => (
                       <li key={f} className="flex items-center gap-2 text-sm text-[#F1F5F9]">
-                        <CheckCircle className="w-3.5 h-3.5 text-[#7C3AED] shrink-0" />
+                        <CheckCircle className="w-3.5 h-3.5 text-[#8b5cf6] shrink-0" />
                         {f}
                       </li>
                     ))}
@@ -287,8 +289,8 @@ export default function SettingsClient({ user, client, onboarding, subscription 
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-[rgba(124,58,237,0.12)] flex items-center justify-center">
-                    <ShoppingCart className="w-4 h-4 text-[#8B5CF6]" />
+                  <div className="w-9 h-9 rounded-lg bg-[rgba(139,92,246,0.12)] flex items-center justify-center">
+                    <ShoppingCart className="w-4 h-4 text-[#a78bfa]" />
                   </div>
                   <div>
                     <p className="text-sm font-medium">TiendaNube</p>
@@ -345,7 +347,7 @@ export default function SettingsClient({ user, client, onboarding, subscription 
               {!isTnConnected && (
                 <button
                   onClick={() => { window.location.href = "/api/tiendanube/connect"; }}
-                  className="flex items-center gap-2 bg-gradient-to-r from-[#7C3AED] to-[#2563EB] hover:opacity-90 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-all"
+                  className="flex items-center gap-2 bg-gradient-to-r from-[#8b5cf6] to-[#c026d3] hover:opacity-90 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-all"
                 >
                   <ShoppingCart className="w-4 h-4" />
                   Reconectar TiendaNube
@@ -371,7 +373,7 @@ export default function SettingsClient({ user, client, onboarding, subscription 
                   value={emailSubject}
                   maxLength={120}
                   onChange={(e) => setEmailSubject(e.target.value)}
-                  className="w-full bg-[#0a0a0f] border border-[rgba(124,58,237,0.25)] focus:border-[#7C3AED] rounded-xl px-4 py-3 text-sm text-[#F1F5F9] outline-none transition-colors"
+                  className="w-full bg-[#0a0a0f] border border-[rgba(139,92,246,0.25)] focus:border-[#8b5cf6] rounded-xl px-4 py-3 text-sm text-[#F1F5F9] outline-none transition-colors"
                 />
                 <p className="text-xs text-[#64748B] mt-1">
                   Vista previa: <span className="text-[#94A3B8]">{emailSubject.replace(/\{store\}/g, storeName || "Tu Tienda")}</span>
@@ -396,8 +398,8 @@ export default function SettingsClient({ user, client, onboarding, subscription 
                           style={{ width: 160, flexShrink: 0 }}
                           className={`relative rounded-xl overflow-hidden border-2 transition-all text-left ${
                             active
-                              ? "border-[#7C3AED] shadow-[0_0_0_1px_rgba(124,58,237,0.35)]"
-                              : "border-[rgba(255,255,255,0.07)] hover:border-[rgba(124,58,237,0.4)]"
+                              ? "border-[#8b5cf6] shadow-[0_0_0_1px_rgba(139,92,246,0.35)]"
+                              : "border-[rgba(255,255,255,0.07)] hover:border-[rgba(139,92,246,0.4)]"
                           }`}
                         >
                           <div
@@ -430,7 +432,7 @@ export default function SettingsClient({ user, client, onboarding, subscription 
                             <p className="text-xs font-semibold text-[#F1F5F9] truncate">{tpl.name}</p>
                           </div>
                           {active && (
-                            <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#7C3AED] flex items-center justify-center shadow-lg">
+                            <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#8b5cf6] flex items-center justify-center shadow-lg">
                               <CheckCircle className="w-3.5 h-3.5 text-white" />
                             </div>
                           )}
@@ -483,7 +485,7 @@ export default function SettingsClient({ user, client, onboarding, subscription 
               <button
                 onClick={saveEmailSettings}
                 disabled={savingEmail}
-                className="flex items-center gap-2 bg-gradient-to-r from-[#7C3AED] to-[#2563EB] hover:opacity-90 disabled:opacity-60 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-all"
+                className="flex items-center gap-2 bg-gradient-to-r from-[#8b5cf6] to-[#c026d3] hover:opacity-90 disabled:opacity-60 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-all"
               >
                 {savingEmail ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                 {savingEmail ? "Guardando y actualizando…" : "Guardar plantilla"}

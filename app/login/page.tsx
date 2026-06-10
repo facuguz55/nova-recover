@@ -52,19 +52,19 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center px-6">
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-[radial-gradient(ellipse_at_center,rgba(124,58,237,0.12)_0%,transparent_70%)] pointer-events-none" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-[radial-gradient(ellipse_at_center,rgba(139,92,246,0.12)_0%,transparent_70%)] pointer-events-none" />
 
       <div className="w-full max-w-md relative">
         <div className="flex justify-center mb-8">
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#7C3AED] to-[#2563EB] flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#8b5cf6] to-[#c026d3] flex items-center justify-center">
               <Zap className="w-5 h-5 text-white" />
             </div>
             <span className="font-bold text-xl tracking-tight">Nova Recover</span>
           </Link>
         </div>
 
-        <div className="bg-[#111118] border border-[rgba(124,58,237,0.2)] rounded-2xl p-8">
+        <div className="bg-[#111118] border border-[rgba(139,92,246,0.2)] rounded-2xl p-8">
           <h1 className="text-2xl font-black mb-1">Bienvenido de vuelta</h1>
           <p className="text-[#94A3B8] text-sm mb-8">Ingresá a tu cuenta para ver tus métricas.</p>
 
@@ -77,7 +77,7 @@ export default function LoginPage() {
                 value={form.email}
                 maxLength={254}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
-                className="w-full bg-[#0a0a0f] border border-[rgba(124,58,237,0.25)] rounded-xl px-4 py-3 text-sm text-[#F1F5F9] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#7C3AED] transition-colors"
+                className="w-full bg-[#0a0a0f] border border-[rgba(139,92,246,0.25)] rounded-xl px-4 py-3 text-sm text-[#F1F5F9] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#8b5cf6] transition-colors"
               />
               {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email}</p>}
             </div>
@@ -91,7 +91,7 @@ export default function LoginPage() {
                   value={form.password}
                   maxLength={128}
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  className="w-full bg-[#0a0a0f] border border-[rgba(124,58,237,0.25)] rounded-xl px-4 py-3 pr-11 text-sm text-[#F1F5F9] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#7C3AED] transition-colors"
+                  className="w-full bg-[#0a0a0f] border border-[rgba(139,92,246,0.25)] rounded-xl px-4 py-3 pr-11 text-sm text-[#F1F5F9] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#8b5cf6] transition-colors"
                 />
                 <button
                   type="button"
@@ -107,7 +107,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#7C3AED] to-[#2563EB] hover:opacity-90 disabled:opacity-60 text-white py-3.5 rounded-xl font-semibold transition-all"
+              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#8b5cf6] to-[#c026d3] hover:opacity-90 disabled:opacity-60 text-white py-3.5 rounded-xl font-semibold transition-all"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
               {loading ? "Ingresando..." : "Iniciar sesión"}
@@ -116,7 +116,7 @@ export default function LoginPage() {
 
           <p className="text-center text-sm text-[#94A3B8] mt-6">
             ¿No tenés cuenta?{" "}
-            <Link href="/register" className="text-[#8B5CF6] hover:text-white font-medium transition-colors">
+            <Link href="/register" className="text-[#a78bfa] hover:text-white font-medium transition-colors">
               Crear cuenta gratis
             </Link>
           </p>

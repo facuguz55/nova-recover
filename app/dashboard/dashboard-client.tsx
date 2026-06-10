@@ -10,6 +10,11 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, PieChart, Pie, Cell,
+} from "recharts";
+import AnimatedBackground from "@/components/animated-background";
 
 interface EmailRecord {
   email: string;
@@ -42,6 +47,8 @@ interface Props {
   };
   recentEmails: EmailRecord[];
   recentConversions: ConversionRecord[];
+  allEmails: EmailRecord[];
+  allConversions: ConversionRecord[];
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -83,7 +90,7 @@ function formatDate(iso: string) {
   return d.toLocaleDateString("es-AR", { day: "numeric", month: "short" });
 }
 
-export default function DashboardClient({ user, clientStatus, onboarding, tnDisconnectedAt, subscription, metrics, recentEmails, recentConversions }: Props) {
+export default function DashboardClient({ user, clientStatus, onboarding, tnDisconnectedAt, subscription, metrics, recentEmails, recentConversions, allEmails, allConversions }: Props) {
   const router = useRouter();
   const [disconnecting, setDisconnecting] = useState(false);
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
@@ -112,16 +119,39 @@ export default function DashboardClient({ user, clientStatus, onboarding, tnDisc
     }
   }
 
+  // Serie diaria (últimos 14 días): mails enviados vs recuperados
+  const dailyData = (() => {
+    const days: { date: string; enviados: number; recuperados: number }[] = [];
+    const now = new Date();
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+      const next = new Date(d.getTime() + 86_400_000);
+      const enviados = allEmails.filter((e) => { const t = new Date(e.fecha); return t >= d && t < next; }).length;
+      const recuperados = allConversions.filter((c) => { const t = new Date(c.fecha_orden); return t >= d && t < next; }).length;
+      days.push({ date: `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`, enviados, recuperados });
+    }
+    return days;
+  })();
+
+  const revenueRecuperado = allConversions.reduce((a, c) => a + Number(c.total_orden || 0), 0);
+
+  const funnelData = [
+    { name: "Recuperados", value: metrics.conversions, color: "#22c55e" },
+    { name: "Sin convertir", value: Math.max(metrics.emailsSent - metrics.conversions, 0), color: "#8b5cf6" },
+  ].filter((s) => s.value > 0);
+  const funnelTotal = funnelData.reduce((a, x) => a + x.value, 0);
+
   const subStatus = subscription?.status;
   const isActive = clientStatus === "active" || subStatus === "active" || subStatus === "trial";
   const isTnConnected = !!onboarding?.tn_store_id && !tnDisconnectedAt;
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-[#F1F5F9]">
-      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-[rgba(124,58,237,0.15)] bg-[rgba(10,10,15,0.95)] backdrop-blur-md h-16 flex items-center px-6">
+      <AnimatedBackground />
+      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-[rgba(139,92,246,0.15)] bg-[rgba(10,10,15,0.95)] backdrop-blur-md h-16 flex items-center px-6">
         <div className="max-w-6xl mx-auto w-full flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#7C3AED] to-[#2563EB] flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#8b5cf6] to-[#c026d3] flex items-center justify-center">
               <Zap className="w-4 h-4 text-white" />
             </div>
             <span className="font-bold tracking-tight">Nova Recover</span>
@@ -146,7 +176,7 @@ export default function DashboardClient({ user, clientStatus, onboarding, tnDisc
         </div>
       </nav>
 
-      <main className="pt-24 pb-16 px-6">
+      <main className="relative z-10 pt-24 pb-16 px-6">
         <div className="max-w-6xl mx-auto">
 
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10">
@@ -191,7 +221,7 @@ export default function DashboardClient({ user, clientStatus, onboarding, tnDisc
           )}
 
           {!isActive && (
-            <div className="bg-[rgba(124,58,237,0.08)] border border-[rgba(124,58,237,0.3)] rounded-2xl p-5 mb-8 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div className="bg-[rgba(139,92,246,0.08)] border border-[rgba(139,92,246,0.3)] rounded-2xl p-5 mb-8 flex flex-col sm:flex-row items-start sm:items-center gap-4">
               <div className="flex-1">
                 <p className="font-semibold mb-1">Tu sistema no está activo todavía</p>
                 <p className="text-sm text-[#94A3B8]">
@@ -202,7 +232,7 @@ export default function DashboardClient({ user, clientStatus, onboarding, tnDisc
               </div>
               <button
                 onClick={() => router.push("/onboarding")}
-                className="flex items-center gap-2 bg-gradient-to-r from-[#7C3AED] to-[#2563EB] text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:opacity-90 transition-all shrink-0"
+                className="flex items-center gap-2 bg-gradient-to-r from-[#8b5cf6] to-[#c026d3] text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:opacity-90 transition-all shrink-0"
               >
                 {!onboarding?.tn_store_id ? "Completar configuración" : "Activar ahora"}
                 <ArrowRight className="w-4 h-4" />
@@ -211,7 +241,7 @@ export default function DashboardClient({ user, clientStatus, onboarding, tnDisc
           )}
 
           {/* Métricas reales */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
             {[
               {
                 icon: <ShoppingCart className="w-5 h-5" />,
@@ -239,12 +269,19 @@ export default function DashboardClient({ user, clientStatus, onboarding, tnDisc
                   : "—",
                 sub: "sobre total detectados",
               },
-            ].map((card) => (
+              {
+                icon: <Zap className="w-5 h-5" />,
+                label: "Plata recuperada",
+                value: revenueRecuperado > 0 ? `$${revenueRecuperado.toLocaleString("es-AR", { maximumFractionDigits: 0 })}` : "—",
+                sub: "en ventas cerradas",
+              },
+            ].map((card, ci) => (
               <div
                 key={card.label}
-                className="bg-[#111118] border border-[rgba(124,58,237,0.2)] rounded-2xl p-5"
+                className="metric-card anim-up bg-[#111118] border border-[rgba(139,92,246,0.2)] rounded-2xl p-5"
+                style={{ animationDelay: `${0.05 + ci * 0.07}s` }}
               >
-                <div className="w-9 h-9 rounded-lg bg-[rgba(124,58,237,0.15)] flex items-center justify-center text-[#8B5CF6] mb-4">
+                <div className="w-9 h-9 rounded-lg bg-[rgba(139,92,246,0.15)] flex items-center justify-center text-[#a78bfa] mb-4">
                   {card.icon}
                 </div>
                 <div className="text-2xl font-black mb-0.5">{card.value}</div>
@@ -254,9 +291,90 @@ export default function DashboardClient({ user, clientStatus, onboarding, tnDisc
             ))}
           </div>
 
+          {/* Gráficos */}
+          <div className="grid lg:grid-cols-3 gap-6 mb-8">
+            <div className="anim-up metric-card lg:col-span-2 bg-[#111118] border border-[rgba(139,92,246,0.15)] rounded-2xl overflow-hidden neon-chart" style={{ animationDelay: "0.3s" }}>
+              <div className="px-5 py-3 border-b border-[rgba(139,92,246,0.1)] flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold">Actividad de recuperación</p>
+                  <p className="text-[11px] text-[#64748B] mt-0.5">Últimos 14 días</p>
+                </div>
+                <div className="flex items-center gap-3 text-[11px]">
+                  <span className="flex items-center gap-1.5 text-[#94A3B8]"><span className="w-2 h-2 rounded-full" style={{ background: "#a855f7", boxShadow: "0 0 6px #a855f7" }} /> Mails</span>
+                  <span className="flex items-center gap-1.5 text-[#94A3B8]"><span className="w-2 h-2 rounded-full" style={{ background: "#22c55e", boxShadow: "0 0 6px #22c55e" }} /> Recuperados</span>
+                </div>
+              </div>
+              <div className="p-3">
+                <ResponsiveContainer width="100%" height={190}>
+                  <AreaChart data={dailyData} margin={{ top: 8, right: 5, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="gradEnv" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#a855f7" stopOpacity={0.3} />
+                        <stop offset="100%" stopColor="#a855f7" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="gradRec" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#22c55e" stopOpacity={0.3} />
+                        <stop offset="100%" stopColor="#22c55e" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(139,92,246,0.07)" vertical={false} />
+                    <XAxis dataKey="date" tick={{ fill: "#64748B", fontSize: 10 }} axisLine={false} tickLine={false} interval={2} />
+                    <YAxis tick={{ fill: "#64748B", fontSize: 10 }} axisLine={false} tickLine={false} width={26} allowDecimals={false} />
+                    <Tooltip contentStyle={{ background: "#111118", border: "1px solid rgba(168,85,247,0.3)", borderRadius: "10px", color: "#F1F5F9" }} />
+                    <Area type="monotone" dataKey="enviados" name="Mails" stroke="#a855f7" strokeWidth={2} fill="url(#gradEnv)" dot={false} activeDot={{ r: 4, fill: "#c084fc" }} animationDuration={1300} />
+                    <Area type="monotone" dataKey="recuperados" name="Recuperados" stroke="#22c55e" strokeWidth={2} fill="url(#gradRec)" dot={false} activeDot={{ r: 4, fill: "#22c55e" }} animationDuration={1300} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div className="anim-up metric-card bg-[#111118] border border-[rgba(139,92,246,0.15)] rounded-2xl overflow-hidden" style={{ animationDelay: "0.38s" }}>
+              <div className="px-5 py-3 border-b border-[rgba(139,92,246,0.1)]">
+                <p className="text-sm font-semibold">Conversión de mails</p>
+                <p className="text-[11px] text-[#64748B] mt-0.5">{funnelTotal} mails enviados</p>
+              </div>
+              {funnelTotal > 0 ? (
+                <div className="p-3 flex items-center gap-4">
+                  <div className="relative" style={{ width: 140, height: 140, flexShrink: 0 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie data={funnelData} dataKey="value" nameKey="name" innerRadius={44} outerRadius={62} paddingAngle={3} stroke="none" animationDuration={1200}>
+                          {funnelData.map((f) => (
+                            <Cell key={f.name} fill={f.color} style={{ filter: `drop-shadow(0 0 5px ${f.color}66)` }} />
+                          ))}
+                        </Pie>
+                        <Tooltip contentStyle={{ background: "#111118", border: "1px solid rgba(139,92,246,0.3)", borderRadius: "10px", color: "#F1F5F9" }} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                      <p className="text-lg font-black leading-none">
+                        {funnelTotal > 0 ? `${Math.round((metrics.conversions / funnelTotal) * 100)}%` : "0%"}
+                      </p>
+                      <p className="text-[9px] text-[#64748B] uppercase tracking-widest mt-0.5">conversión</p>
+                    </div>
+                  </div>
+                  <div className="flex-1 space-y-2.5 min-w-0">
+                    {funnelData.map((f) => (
+                      <div key={f.name} className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: f.color, boxShadow: `0 0 6px ${f.color}` }} />
+                        <span className="text-xs text-[#94A3B8] flex-1 truncate">{f.name}</span>
+                        <span className="text-xs font-bold">{f.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-10 text-center px-4">
+                  <Mail className="w-8 h-8 text-[rgba(139,92,246,0.3)] mb-2" />
+                  <p className="text-xs text-[#64748B]">Cuando se envíen mails vas a ver acá la tasa de conversión.</p>
+                </div>
+              )}
+            </div>
+          </div>
+
           <div className="grid lg:grid-cols-3 gap-6">
             {/* Actividad reciente */}
-            <div className="lg:col-span-2 bg-[#111118] border border-[rgba(124,58,237,0.2)] rounded-2xl p-6">
+            <div className="lg:col-span-2 bg-[#111118] border border-[rgba(139,92,246,0.2)] rounded-2xl p-6">
               <h2 className="font-bold mb-5">Actividad reciente</h2>
 
               {/* Conversiones (si las hay) */}
@@ -296,7 +414,7 @@ export default function DashboardClient({ user, clientStatus, onboarding, tnDisc
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <Inbox className="w-10 h-10 text-[rgba(124,58,237,0.3)] mb-3" />
+                  <Inbox className="w-10 h-10 text-[rgba(139,92,246,0.3)] mb-3" />
                   <p className="text-[#94A3B8] text-sm">Todavía no hay carritos detectados.</p>
                   <p className="text-xs text-[#64748B] mt-1">
                     El workflow revisa TiendaNube cada 2 horas automáticamente.
@@ -306,7 +424,7 @@ export default function DashboardClient({ user, clientStatus, onboarding, tnDisc
             </div>
 
             {/* Panel de configuración */}
-            <div className="bg-[#111118] border border-[rgba(124,58,237,0.2)] rounded-2xl p-6">
+            <div className="bg-[#111118] border border-[rgba(139,92,246,0.2)] rounded-2xl p-6">
               <h2 className="font-bold mb-5">Mi configuración</h2>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -383,7 +501,7 @@ export default function DashboardClient({ user, clientStatus, onboarding, tnDisc
               {!isTnConnected && (
                 <button
                   onClick={() => window.location.href = "/api/tiendanube/connect"}
-                  className="mt-6 w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#7C3AED] to-[#2563EB] hover:opacity-90 text-white py-3 rounded-xl text-sm font-semibold transition-all"
+                  className="mt-6 w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#8b5cf6] to-[#c026d3] hover:opacity-90 text-white py-3 rounded-xl text-sm font-semibold transition-all"
                 >
                   <ShoppingCart className="w-4 h-4" />
                   Reconectar TiendaNube

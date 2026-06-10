@@ -45,6 +45,8 @@ export default async function DashboardPage() {
       }}
       recentEmails={emailList.slice(0, 15)}
       recentConversions={conversionList.slice(0, 5)}
+      allEmails={emailList}
+      allConversions={conversionList}
     />
   );
 }
