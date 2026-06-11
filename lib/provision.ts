@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { sanitizeString, sanitizeHtml } from "@/lib/sanitize";
 import { getTemplate, buildSubject } from "@/lib/email-templates";
+import { maybeDecrypt } from "@/lib/crypto";
 
 const N8N_BASE_URL = "https://devn8n.santafeia.shop";
 const NOVA_SUPABASE_URL = "https://ooqwjywukihfztmkffym.supabase.co";
@@ -123,7 +124,8 @@ export async function runProvision(userId: string, options?: { force?: boolean }
   const nombreMarca = sanitizeString(client?.name || emailSlug, 100);
   const senderName = sanitizeString(onboarding.email_sender_name || nombreMarca, 60);
   const tnStoreId = sanitizeString(onboarding.tn_store_id, 20);
-  const tnApiToken = onboarding.tn_api_token as string;
+  const tnApiToken = maybeDecrypt(onboarding.tn_api_token as string) ?? "";
+  if (!tnApiToken) return { success: false, error: "Token de TiendaNube ilegible" };
   const supabaseAnon = process.env.NOVA_SUPABASE_ANON_KEY!;
   const templateId = (onboarding.email_template_id as string | null) ?? "dark-minimal";
   const emailSubjectTpl = (onboarding.email_subject as string | null) ?? "Completaste tu carrito en {store}";
@@ -148,6 +150,45 @@ export async function runProvision(userId: string, options?: { force?: boolean }
   }).eq("client_id", userId);
 
   return { success: true, clientId };
+}
+
+/** Elimina los workflows de n8n del cliente y limpia las referencias, SIN
+ *  recrearlos. Se usa cuando la suscripción se cancela: corta el servicio. */
+export async function deprovision(userId: string): Promise<void> {
+  const admin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
+  const { data: onboarding } = await admin
+    .from("onboarding_data")
+    .select("n8n_workflow_tracking, n8n_workflow_recuperador, n8n_workflow_conversiones")
+    .eq("client_id", userId)
+    .single();
+
+  const ids = [
+    onboarding?.n8n_workflow_tracking,
+    onboarding?.n8n_workflow_recuperador,
+    onboarding?.n8n_workflow_conversiones,
+  ].filter(Boolean);
+
+  if (ids.length === 0) return;
+
+  await Promise.allSettled(
+    ids.map((id) =>
+      fetch(`${N8N_BASE_URL}/api/v1/workflows/${id}`, {
+        method: "DELETE",
+        headers: { "X-N8N-API-KEY": process.env.N8N_API_KEY! },
+      })
+    )
+  );
+
+  await admin.from("onboarding_data").update({
+    n8n_workflow_tracking: null,
+    n8n_workflow_recuperador: null,
+    n8n_workflow_conversiones: null,
+    n8n_client_id: null,
+  }).eq("client_id", userId);
 }
 
 export async function reprovision(userId: string): Promise<{ success: boolean; error?: string }> {

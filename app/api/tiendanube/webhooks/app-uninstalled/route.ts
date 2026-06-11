@@ -5,7 +5,10 @@ import crypto from "crypto";
 function verifySignature(body: string, signature: string | null): boolean {
   if (!signature || !process.env.TIENDANUBE_APP_SECRET) return false;
   const hmac = crypto.createHmac("sha256", process.env.TIENDANUBE_APP_SECRET).update(body).digest("hex");
-  return hmac === signature;
+  // Comparacion en tiempo constante para evitar timing attacks
+  const a = Buffer.from(hmac);
+  const b = Buffer.from(signature);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
 export async function POST(req: NextRequest) {

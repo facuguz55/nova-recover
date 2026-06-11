@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { reprovision } from "@/lib/provision";
+import { maybeEncrypt } from "@/lib/crypto";
 
 async function registerWebhook(storeId: number, accessToken: string, appUrl: string) {
   const webhookUrl = `${appUrl}/api/tiendanube/webhooks/app-uninstalled`;
@@ -36,10 +38,18 @@ async function registerWebhook(storeId: number, accessToken: string, appUrl: str
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
+  const state = searchParams.get("state");
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
   if (!code) {
     return NextResponse.redirect(`${appUrl}/onboarding?tn_error=no_code`);
+  }
+
+  // Validar state para prevenir CSRF en el OAuth
+  const cookieStore = await cookies();
+  const savedState = cookieStore.get("tn_oauth_state")?.value;
+  if (!state || !savedState || state !== savedState) {
+    return NextResponse.redirect(`${appUrl}/onboarding?tn_error=invalid_state`);
   }
 
   const appId = process.env.TIENDANUBE_APP_ID;
@@ -81,7 +91,7 @@ export async function GET(request: NextRequest) {
   if (existing) {
     await supabase.from("onboarding_data").update({
       tn_store_id: String(user_id),
-      tn_api_token: access_token,
+      tn_api_token: maybeEncrypt(access_token),
       tn_disconnected_at: null,
     }).eq("id", existing.id);
 
@@ -94,7 +104,7 @@ export async function GET(request: NextRequest) {
     await supabase.from("onboarding_data").insert({
       client_id: user.id,
       tn_store_id: String(user_id),
-      tn_api_token: access_token,
+      tn_api_token: maybeEncrypt(access_token),
       email_sender_name: storeName,
     });
   }
@@ -103,5 +113,7 @@ export async function GET(request: NextRequest) {
   await registerWebhook(user_id, access_token, appUrl);
 
   const redirectPath = existing?.completed_at ? "/dashboard?tn_reconnected=1" : "/onboarding?tn_connected=1";
-  return NextResponse.redirect(`${appUrl}${redirectPath}`);
+  const res = NextResponse.redirect(`${appUrl}${redirectPath}`);
+  res.cookies.delete("tn_oauth_state");
+  return res;
 }

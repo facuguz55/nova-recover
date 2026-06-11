@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { deprovision } from "@/lib/provision";
 
 export async function POST(req: NextRequest) {
   if (!process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_WEBHOOK_SECRET) {
@@ -69,7 +70,11 @@ export async function POST(req: NextRequest) {
       .select("client_id")
       .eq("stripe_subscription_id", sub.id)
       .single();
-    if (data) await supabase.from("clients").update({ status: "inactive" }).eq("id", data.client_id);
+    if (data) {
+      await supabase.from("clients").update({ status: "inactive" }).eq("id", data.client_id);
+      // Cortar el servicio: eliminar los workflows de n8n que siguen corriendo
+      await deprovision(data.client_id).catch((e) => console.error("Deprovision error:", e));
+    }
   }
 
   if (event.type === "invoice.payment_failed") {

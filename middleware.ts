@@ -10,8 +10,13 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0] ?? request.headers.get("x-real-ip") ?? "unknown"
 
+  // Los webhooks (Stripe / TiendaNube) llegan desde IPs externas y en ráfagas;
+  // ya están protegidos por firma, así que NO se rate-limitean por IP (evita
+  // perder eventos por 429).
+  const isWebhook = pathname.startsWith("/api/stripe/webhook") || pathname.startsWith("/api/tiendanube/webhooks")
+
   // Rate limit global por IP en rutas de auth — 20 requests por minuto
-  if (pathname.startsWith("/api/") || pathname === "/login" || pathname === "/register") {
+  if (!isWebhook && (pathname.startsWith("/api/") || pathname === "/login" || pathname === "/register")) {
     const { allowed } = rateLimit(`ip:${ip}:${pathname}`, 20, 60 * 1000)
     if (!allowed) {
       return new NextResponse("Too Many Requests", { status: 429 })
