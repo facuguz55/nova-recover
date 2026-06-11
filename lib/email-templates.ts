@@ -11,6 +11,11 @@ export interface EmailTemplate {
 // El nombre del contacto lo inyecta n8n en runtime.
 const NAME = "{{ $json.nombre_contacto }}";
 
+// Badge "by Nova Agency" — pill que se adapta al estilo de cada template.
+function novaBadge(color: string, border: string, font?: string): string {
+  return `<table cellpadding="0" cellspacing="0" align="center" style="margin:14px auto 0;"><tr><td style="border:1px solid ${border};border-radius:100px;padding:5px 13px;"><a href="https://novaagency.info" style="text-decoration:none;font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:${color};${font ? `font-family:${font};` : ""}">⚡ by Nova Agency</a></td></tr></table>`;
+}
+
 function doc(bg: string, inner: string): string {
   return `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background:${bg};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:${bg};padding:40px 16px;"><tr><td align="center">
@@ -50,7 +55,7 @@ function buildNeonViolet(store: string, link: string): string {
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#1a1126;border:1px solid #3b2a5e;border-radius:14px;"><tr><td style="padding:14px 18px;font-size:12px;color:#c4b5fd;line-height:1.6;">⚡ <strong style="color:#fff;">Atención:</strong> no reservamos unidades. Si se agota tu talle o color, desaparece del carrito.</td></tr></table>
 </td></tr></table>
 </td></tr>
-<tr><td style="padding:24px 0 8px;text-align:center;"><p style="margin:0;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#475569;">${s}</p></td></tr>`);
+<tr><td style="padding:24px 0 8px;text-align:center;"><p style="margin:0;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#475569;">${s}</p>${novaBadge("#8b5cf6","#2d1b4e")}</td></tr>`);
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -66,7 +71,7 @@ function buildDarkMinimal(store: string, link: string): string {
 <p style="margin:0 0 44px;font-size:15px;color:#888;line-height:1.9;font-weight:300;">Hola ${NAME}. Dejaste algo sin comprar.<br>El stock se mueve rápido y no reservamos unidades.</p>
 <table cellpadding="0" cellspacing="0" align="center" style="margin:0 auto;"><tr><td style="border:1px solid #00C4D4;border-radius:2px;"><a href="${link}" style="display:block;padding:16px 44px;font-size:11px;font-weight:600;letter-spacing:3px;text-transform:uppercase;text-decoration:none;color:#00C4D4;">Completar pedido</a></td></tr></table>
 </td></tr>
-<tr><td style="padding:56px 40px;text-align:center;"><p style="margin:0;font-size:9px;letter-spacing:4px;text-transform:uppercase;color:#333;">${s}</p></td></tr>`);
+<tr><td style="padding:56px 40px;text-align:center;"><p style="margin:0;font-size:9px;letter-spacing:4px;text-transform:uppercase;color:#333;">${s}</p>${novaBadge("#2a7a82","#143034")}</td></tr>`);
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -90,7 +95,7 @@ function buildWhiteClean(store: string, link: string): string {
 <td style="padding:20px;text-align:center;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#999;">Devolución fácil</td>
 </tr></table></td></tr>
 </table></td></tr>
-<tr><td style="padding:24px 0;text-align:center;"><p style="margin:0;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#bbb;">${s}</p></td></tr>`);
+<tr><td style="padding:24px 0;text-align:center;"><p style="margin:0;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#bbb;">${s}</p>${novaBadge("#999","#e0e0e0")}</td></tr>`);
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -117,7 +122,7 @@ function buildLuxuryGold(store: string, link: string): string {
 <td style="padding:18px 8px;text-align:center;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#7a6a44;">Devolución fácil</td>
 </tr></table>
 </td></tr>
-<tr><td style="padding:24px 0;text-align:center;"><p style="margin:0;font-size:10px;letter-spacing:4px;text-transform:uppercase;color:#3a3018;">${s}</p></td></tr>`);
+<tr><td style="padding:24px 0;text-align:center;"><p style="margin:0;font-size:10px;letter-spacing:4px;text-transform:uppercase;color:#3a3018;">${s}</p>${novaBadge("#c9a84c","#2a2010","Georgia,serif")}</td></tr>`);
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -136,7 +141,7 @@ function buildBoldPurple(store: string, link: string): string {
 <table cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 14px;"><tr><td style="background:#fff;border-radius:100px;"><a href="${link}" style="display:block;padding:18px 48px;font-size:14px;font-weight:900;letter-spacing:0.5px;text-transform:uppercase;text-decoration:none;color:#a855f7;">Completar pedido</a></td></tr></table>
 <p style="margin:14px 0 0;font-size:12px;color:#b794d4;">⏱ No te lo pierdas — el stock se agota rápido</p>
 </td></tr>
-<tr><td style="padding:22px 0;text-align:center;"><p style="margin:0;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#6b3fa0;">${s}</p></td></tr>`);
+<tr><td style="padding:22px 0;text-align:center;"><p style="margin:0;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#6b3fa0;">${s}</p>${novaBadge("#d8b4fe","#6b3fa0")}</td></tr>`);
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -158,7 +163,7 @@ function buildSportsRed(store: string, link: string): string {
 <td style="padding:16px 8px;text-align:center;font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#ef4444;">Devolución gratis</td>
 </tr></table>
 </td></tr>
-<tr><td style="padding:22px 0;text-align:center;"><p style="margin:0;font-size:10px;font-weight:800;font-style:italic;letter-spacing:3px;text-transform:uppercase;color:#3a1010;">${s}</p></td></tr>`);
+<tr><td style="padding:22px 0;text-align:center;"><p style="margin:0;font-size:10px;font-weight:800;font-style:italic;letter-spacing:3px;text-transform:uppercase;color:#3a1010;">${s}</p>${novaBadge("#ef4444","#3a1010")}</td></tr>`);
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -175,7 +180,7 @@ function buildFashion(store: string, link: string): string {
 <p style="margin:0 0 40px;font-size:15px;color:#8b7d70;line-height:1.9;font-weight:300;">hola ${NAME}, los productos que elegiste<br>siguen disponibles. completá tu pedido y lucílos.</p>
 <table cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 56px;"><tr><td style="border:1px solid #2c1810;"><a href="${link}" style="display:block;padding:16px 48px;font-size:12px;font-weight:500;letter-spacing:3px;text-transform:lowercase;text-decoration:none;color:#2c1810;">ver mi carrito</a></td></tr></table>
 </td></tr></table></td></tr>
-<tr><td style="padding:28px 0;text-align:center;"><p style="margin:0;font-size:10px;letter-spacing:3px;text-transform:lowercase;color:#c4b5a8;">${s} · envío y devolución fácil</p></td></tr>`);
+<tr><td style="padding:28px 0;text-align:center;"><p style="margin:0;font-size:10px;letter-spacing:3px;text-transform:lowercase;color:#c4b5a8;">${s} · envío y devolución fácil</p>${novaBadge("#8b6f5e","#e5dccf","Georgia,serif")}</td></tr>`);
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -204,7 +209,7 @@ function buildTechNeon(store: string, link: string): string {
 <td style="padding:14px 8px;text-align:center;font-family:${mono};font-size:10px;color:#3a7a4a;">soporte_24/7</td>
 </tr></table></td></tr>
 </table></td></tr>
-<tr><td style="padding:22px 0;text-align:center;"><p style="margin:0;font-family:${mono};font-size:10px;letter-spacing:2px;color:#1a3a1a;">// ${s.toLowerCase()}</p></td></tr>`);
+<tr><td style="padding:22px 0;text-align:center;"><p style="margin:0;font-family:${mono};font-size:10px;letter-spacing:2px;color:#1a3a1a;">// ${s.toLowerCase()}</p>${novaBadge("#3a7a4a","#0a3a0a",mono)}</td></tr>`);
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -228,7 +233,7 @@ function buildWarmFriendly(store: string, link: string): string {
 <td style="padding:18px 8px;text-align:center;font-size:11px;font-weight:600;color:#d18445;">↩️ Devolución fácil</td>
 </tr></table>
 </td></tr>
-<tr><td style="padding:22px 0;text-align:center;"><p style="margin:0;font-size:11px;color:#d4b8a0;">Con cariño, el equipo de ${s} 🧡</p></td></tr>`);
+<tr><td style="padding:22px 0;text-align:center;"><p style="margin:0;font-size:11px;color:#d4b8a0;">Con cariño, el equipo de ${s} 🧡</p>${novaBadge("#f97316","#ffe0c0")}</td></tr>`);
 }
 
 // ─── Registro ─────────────────────────────────────────────────────────────────
